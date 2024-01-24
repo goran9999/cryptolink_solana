@@ -23,6 +23,8 @@ pub enum MessengerError {
     InvalidAccountSeeds,
     #[error("MessageV3: Account not signer")]
     AccountNotSigner,
+    #[error("MessageV3: Invalid role for action")]
+    InvalidRoleForAction,
 }
 
 impl From<MessengerError> for ProgramError {

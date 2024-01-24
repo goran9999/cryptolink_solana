@@ -1,6 +1,11 @@
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, program::invoke_signed,
-    program_error::ProgramError, pubkey::Pubkey, rent::Rent, system_instruction::create_account,
+    account_info::AccountInfo,
+    entrypoint::ProgramResult,
+    program::{invoke, invoke_signed},
+    program_error::ProgramError,
+    pubkey::Pubkey,
+    rent::Rent,
+    system_instruction::{self, create_account},
 };
 
 use crate::{
@@ -50,18 +55,16 @@ pub fn role_guard(
             if config
                 .bridge_a_team
                 .iter()
-                .any(|a_team| a_team == checked_account.key)
+                .any(|a_team| a_team.wallet == *checked_account.key && a_team.is_active)
             {
                 return Ok(());
             }
             return Err(MessengerError::CallerNotATeam.into());
         }
         Role::Super => {
-            if config
-                .bridge_supers
-                .iter()
-                .any(|super_account| super_account == checked_account.key)
-            {
+            if config.bridge_supers.iter().any(|super_account| {
+                super_account.wallet == *checked_account.key && super_account.is_active
+            }) {
                 return Ok(());
             }
             return Err(MessengerError::CallerNotSuper.into());
@@ -70,7 +73,7 @@ pub fn role_guard(
             if config
                 .bridge_operators
                 .iter()
-                .any(|operator| operator == checked_account.key)
+                .any(|operator| operator.wallet == *checked_account.key && operator.is_active)
             {
                 return Ok(());
             }
@@ -117,6 +120,26 @@ pub fn check_seeds(
 pub fn assert_account_signer(account: &AccountInfo) -> Result<(), ProgramError> {
     if !account.is_signer {
         return Err(MessengerError::AccountNotSigner.into());
+    }
+
+    Ok(())
+}
+
+pub fn transfer_sol<'a, 'b>(
+    from: &'a AccountInfo<'b>,
+    to: &'a AccountInfo<'b>,
+    lamports: u64,
+    system_program: &'a AccountInfo<'b>,
+    seeds: Option<&[&[u8]]>,
+) -> Result<(), ProgramError> {
+    let ix = system_instruction::transfer(from.key, to.key, lamports);
+
+    let accounts: &[AccountInfo] = &[from.clone(), to.clone(), system_program.clone()];
+
+    if let Some(signer_seeds) = seeds {
+        invoke_signed(&ix, accounts, &[signer_seeds])?;
+    } else {
+        invoke(&ix, accounts)?;
     }
 
     Ok(())
