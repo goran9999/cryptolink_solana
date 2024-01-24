@@ -54,7 +54,14 @@ pub fn process_instruction(
             chain,
             confirmations,
             data,
-        } => {}
+        } => process_send_message::process_send_message(
+            program_id,
+            accounts,
+            recipient,
+            chain,
+            data,
+            confirmations,
+        )?,
     }
 
     Ok(())

@@ -29,7 +29,7 @@ pub enum V3Instruction {
     },
     Send {
         recipient: ForeignAddress,
-        chain: u128,
+        chain: u32,
         confirmations: u16,
         data: Vec<u8>,
     },
