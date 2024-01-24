@@ -1,8 +1,11 @@
 use crate::constants::MESSENGER_SEED;
 use crate::error::MessengerError;
 use crate::state::config::MessengerConfig;
-use crate::utils::{assert_account_signer, check_keys_eq, check_seeds, initialize_account};
+use crate::utils::{
+    assert_account_signer, check_keys_eq, check_seeds, initialize_account, transfer_sol,
+};
 use borsh::BorshSerialize;
+use solana_program::rent::Rent;
 use solana_program::system_program::ID;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -35,6 +38,10 @@ pub fn process_initialize_config(
     let new_config = MessengerConfig::new(payer.key, &accountant)
         .try_to_vec()
         .unwrap();
+
+    let lamports = Rent::default().minimum_balance(new_config.len());
+
+    transfer_sol(payer, config, lamports, system_program, None)?;
 
     initialize_account(
         payer,

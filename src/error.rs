@@ -25,6 +25,10 @@ pub enum MessengerError {
     AccountNotSigner,
     #[error("MessageV3: Invalid role for action")]
     InvalidRoleForAction,
+    #[error("MessageV3: Invalid instruction index")]
+    InvalidInstructionIndex,
+    #[error("MessageV3: Invalid pre-instruction")]
+    InvalidPreInstruction,
 }
 
 impl From<MessengerError> for ProgramError {

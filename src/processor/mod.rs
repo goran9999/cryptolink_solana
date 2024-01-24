@@ -6,6 +6,7 @@ use solana_program::{
 mod process_add_user_permission;
 mod process_change_config;
 mod process_initialize_config;
+mod process_send_message;
 
 use crate::instruction::V3Instruction;
 
