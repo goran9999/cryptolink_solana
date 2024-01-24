@@ -1,0 +1,123 @@
+use solana_program::{
+    account_info::AccountInfo, entrypoint::ProgramResult, program::invoke_signed,
+    program_error::ProgramError, pubkey::Pubkey, rent::Rent, system_instruction::create_account,
+};
+
+use crate::{
+    error::MessengerError,
+    state::config::{MessengerConfig, Role},
+};
+
+pub fn initialize_account<'a, 'b>(
+    from: &'a AccountInfo<'b>,
+    account: &'a AccountInfo<'b>,
+    system_program: &'a AccountInfo<'b>,
+    space: u64,
+    owner_program: &Pubkey,
+    seeds: &[&[u8]],
+) -> ProgramResult {
+    let rent = Rent::default().minimum_balance(space.try_into().unwrap());
+    let create_account_ix = create_account(from.key, account.key, rent, space, owner_program);
+
+    invoke_signed(
+        &create_account_ix,
+        &[
+            from.to_owned(),
+            account.to_owned(),
+            system_program.to_owned(),
+        ],
+        &[seeds],
+    )?;
+
+    Ok(())
+}
+
+pub fn check_keys_eq(account_1: &Pubkey, account_2: &Pubkey) -> Result<(), ProgramError> {
+    if account_1 != account_2 {
+        return Err(MessengerError::PublicKeyMissmatch.into());
+    }
+
+    Ok(())
+}
+
+pub fn role_guard(
+    config: &MessengerConfig,
+    checked_account: &AccountInfo,
+    role: Role,
+) -> Result<(), ProgramError> {
+    match role {
+        Role::ATeam => {
+            if config
+                .bridge_a_team
+                .iter()
+                .any(|a_team| a_team == checked_account.key)
+            {
+                return Ok(());
+            }
+            return Err(MessengerError::CallerNotATeam.into());
+        }
+        Role::Super => {
+            if config
+                .bridge_supers
+                .iter()
+                .any(|super_account| super_account == checked_account.key)
+            {
+                return Ok(());
+            }
+            return Err(MessengerError::CallerNotSuper.into());
+        }
+        Role::Operator => {
+            if config
+                .bridge_operators
+                .iter()
+                .any(|operator| operator == checked_account.key)
+            {
+                return Ok(());
+            }
+            return Err(MessengerError::CallerNotOperator.into());
+        }
+        _ => {
+            return Ok(());
+        }
+    }
+}
+
+pub fn check_target_chain(config: MessengerConfig, target_chain: &u32) -> Result<(), ProgramError> {
+    if !config
+        .enabled_chains
+        .iter()
+        .any(|chain| chain == target_chain)
+    {
+        return Err(MessengerError::ChainNotSupported.into());
+    }
+
+    Ok(())
+}
+
+pub fn get_next_tx_id(config: &MessengerConfig) -> u128 {
+    let next_tx_id = config.next_tx_id.checked_add(1).expect("Oveflow");
+
+    next_tx_id
+}
+
+pub fn check_seeds(
+    account: &AccountInfo,
+    seeds: &[&[u8]],
+    program_id: &Pubkey,
+) -> Result<u8, ProgramError> {
+    let (target_key, bump) = Pubkey::find_program_address(seeds, program_id);
+
+    if *account.key != target_key {
+        return Err(MessengerError::InvalidAccountSeeds.into());
+    }
+
+    Ok(bump)
+}
+
+pub fn assert_account_signer(account: &AccountInfo) -> Result<(), ProgramError> {
+    if !account.is_signer {
+        return Err(MessengerError::AccountNotSigner.into());
+    }
+
+    Ok(())
+}
