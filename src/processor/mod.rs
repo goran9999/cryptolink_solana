@@ -4,6 +4,7 @@ use solana_program::{
 };
 
 mod process_add_user_permission;
+mod process_change_config;
 mod process_initialize_config;
 
 use crate::instruction::V3Instruction;
@@ -32,7 +33,20 @@ pub fn process_instruction(
             is_active,
             role,
         } => process_add_user_permission::process_add_user_permission(
-            role, user, is_active, accounts,
+            role, user, is_active, accounts, program_id,
+        )?,
+        V3Instruction::ChangeConfig {
+            enabled_chains,
+            bridge_enabled,
+            accountant,
+            whitelist_only,
+        } => process_change_config::process_change_config(
+            enabled_chains,
+            bridge_enabled,
+            accountant,
+            whitelist_only,
+            accounts,
+            program_id,
         )?,
     }
 

@@ -9,9 +9,10 @@ use solana_program::{
 };
 
 use crate::{
+    constants::MESSENGER_SEED,
     error::MessengerError,
     state::config::{MessengerConfig, Role, UserPermission},
-    utils::{check_keys_eq, transfer_sol},
+    utils::{check_keys_eq, check_seeds, transfer_sol},
 };
 
 pub fn process_add_user_permission(
@@ -19,12 +20,15 @@ pub fn process_add_user_permission(
     user: Pubkey,
     is_active: bool,
     accounts: &[AccountInfo],
+    program_id: &Pubkey,
 ) -> ProgramResult {
     let accounts = &mut accounts.iter();
 
     let authority = next_account_info(accounts)?;
 
     let raw_config = next_account_info(accounts)?;
+
+    check_seeds(raw_config, &[MESSENGER_SEED], program_id)?;
 
     let system_program = next_account_info(accounts)?;
 
@@ -34,6 +38,8 @@ pub fn process_add_user_permission(
         try_from_slice_unchecked(&raw_config.data.borrow_mut()).unwrap();
 
     check_keys_eq(authority.key, &config.owner)?;
+
+    //TODO: add custom logic for permissions per action
 
     let permissions = match role {
         Role::ATeam => &mut config.bridge_a_team,

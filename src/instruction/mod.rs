@@ -21,4 +21,10 @@ pub enum V3Instruction {
         is_active: bool,
         role: Role,
     },
+    ChangeConfig {
+        enabled_chains: Option<Vec<u32>>,
+        bridge_enabled: Option<bool>,
+        accountant: Option<Pubkey>,
+        whitelist_only: Option<bool>,
+    },
 }
