@@ -27,4 +27,10 @@ pub enum V3Instruction {
         accountant: Option<Pubkey>,
         whitelist_only: Option<bool>,
     },
+    Send {
+        recipient: ForeignAddress,
+        chain: u128,
+        confirmations: u16,
+        data: Vec<u8>,
+    },
 }

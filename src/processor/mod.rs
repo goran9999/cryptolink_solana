@@ -48,6 +48,12 @@ pub fn process_instruction(
             accounts,
             program_id,
         )?,
+        V3Instruction::Send {
+            recipient,
+            chain,
+            confirmations,
+            data,
+        } => {}
     }
 
     Ok(())
