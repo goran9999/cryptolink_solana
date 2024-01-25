@@ -11,18 +11,15 @@ use solana_program::{
 
 use crate::{
     constants::MESSENGER_SEED,
+    instruction::ChangeConfig,
     state::config::{ForeignAddress, MessengerConfig},
     utils::{check_keys_eq, check_seeds, transfer_sol},
 };
 
 pub fn process_change_config(
-    enabled_chains: Option<Vec<u32>>,
-    bridge_enabled: Option<bool>,
-    accountant: Option<Pubkey>,
-    whitelist_only: Option<bool>,
-    chainsig: Option<ForeignAddress>,
     accounts: &[AccountInfo],
     program_id: &Pubkey,
+    data: ChangeConfig,
 ) -> ProgramResult {
     let accounts = &mut accounts.iter();
 
@@ -42,19 +39,19 @@ pub fn process_change_config(
 
     check_keys_eq(system_program.key, &ID)?;
 
-    if let Some(new_accountant) = accountant {
+    if let Some(new_accountant) = data.accountant {
         config.accountant = new_accountant;
     }
 
-    if let Some(whitelist_only) = whitelist_only {
+    if let Some(whitelist_only) = data.whitelist_only {
         config.whitelist_only = whitelist_only;
     }
 
-    if let Some(bridge_enabled) = bridge_enabled {
+    if let Some(bridge_enabled) = data.bridge_enabled {
         config.bridge_enabled = bridge_enabled;
     }
 
-    if let Some(chains) = enabled_chains {
+    if let Some(chains) = data.enabled_chains {
         if chains.len() > config.enabled_chains.len() {
             let new_len = (chains.len() - config.enabled_chains.len()) * 4;
             let realloc_fee = Rent::default().minimum_balance(new_len);
@@ -67,7 +64,7 @@ pub fn process_change_config(
         config.enabled_chains = chains;
     }
 
-    config.chainsig = chainsig;
+    config.chainsig = data.chainsig;
 
     raw_config
         .data

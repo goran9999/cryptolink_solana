@@ -6,10 +6,13 @@ use solana_program::{
 mod process_add_user_permission;
 mod process_change_config;
 mod process_initialize_config;
+mod process_receive_message;
 mod process_send_message;
 mod process_set_exsig;
 
-use crate::instruction::V3Instruction;
+use crate::instruction::{
+    AddUserPermission, ChangeConfig, InitializeConfig, SendMessage, SetExsig, V3Instruction,
+};
 
 pub fn process_instruction(
     data: &[u8],
@@ -20,22 +23,24 @@ pub fn process_instruction(
 
     match instruction {
         V3Instruction::InitializeConfig { accountant } => {
-            process_initialize_config::process_initialize_config(accountant, accounts, program_id)?;
+            process_initialize_config::process_initialize_config(
+                accounts,
+                program_id,
+                InitializeConfig { accountant },
+            )?;
         }
-        V3Instruction::Process {
-            tx_id,
-            source_chain,
-            destination_chain,
-            sender,
-            recipient,
-            data,
-        } => {}
         V3Instruction::AddUserPermission {
             user,
             is_active,
             role,
         } => process_add_user_permission::process_add_user_permission(
-            role, user, is_active, accounts, program_id,
+            accounts,
+            program_id,
+            AddUserPermission {
+                role,
+                user,
+                is_active,
+            },
         )?,
         V3Instruction::ChangeConfig {
             enabled_chains,
@@ -44,13 +49,15 @@ pub fn process_instruction(
             whitelist_only,
             chainsig,
         } => process_change_config::process_change_config(
-            enabled_chains,
-            bridge_enabled,
-            accountant,
-            whitelist_only,
-            chainsig,
             accounts,
             program_id,
+            ChangeConfig {
+                accountant,
+                whitelist_only,
+                chainsig,
+                enabled_chains,
+                bridge_enabled,
+            },
         )?,
         V3Instruction::Send {
             recipient,
@@ -60,14 +67,24 @@ pub fn process_instruction(
         } => process_send_message::process_send_message(
             program_id,
             accounts,
-            recipient,
-            chain,
-            data,
-            confirmations,
+            SendMessage {
+                recipient,
+                chain,
+                data,
+                confirmations,
+            },
         )?,
         V3Instruction::SetExsig { exsig } => {
-            process_set_exsig::process_set_exsig(program_id, accounts, exsig)?
+            process_set_exsig::process_set_exsig(program_id, accounts, SetExsig { exsig })?
         }
+        V3Instruction::ReceiveMessage {
+            tx_id,
+            dest_chain_id,
+            receiver,
+            data,
+            source_chain_id,
+            sender,
+        } => {}
     }
 
     Ok(())

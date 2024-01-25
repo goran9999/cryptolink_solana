@@ -1,5 +1,6 @@
 use crate::constants::MESSENGER_SEED;
 use crate::error::MessengerError;
+use crate::instruction::InitializeConfig;
 use crate::state::config::MessengerConfig;
 use crate::utils::{
     assert_account_signer, check_keys_eq, check_seeds, initialize_account, transfer_sol,
@@ -14,9 +15,9 @@ use solana_program::{
 };
 
 pub fn process_initialize_config(
-    accountant: Pubkey,
     accounts: &[AccountInfo],
     program_id: &Pubkey,
+    data: InitializeConfig,
 ) -> Result<(), ProgramError> {
     let accounts_iter = &mut accounts.iter();
 
@@ -35,7 +36,7 @@ pub fn process_initialize_config(
         return Err(MessengerError::ConfigInitialized.into());
     }
 
-    let new_config = MessengerConfig::new(payer.key, &accountant)
+    let new_config = MessengerConfig::new(payer.key, &data.accountant)
         .try_to_vec()
         .unwrap();
 

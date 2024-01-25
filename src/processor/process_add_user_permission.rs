@@ -11,16 +11,15 @@ use solana_program::{
 use crate::{
     constants::MESSENGER_SEED,
     error::MessengerError,
+    instruction::AddUserPermission,
     state::config::{MessengerConfig, Role, UserPermission},
     utils::{check_keys_eq, check_seeds, transfer_sol},
 };
 
 pub fn process_add_user_permission(
-    role: Role,
-    user: Pubkey,
-    is_active: bool,
     accounts: &[AccountInfo],
     program_id: &Pubkey,
+    data: AddUserPermission,
 ) -> ProgramResult {
     let accounts = &mut accounts.iter();
 
@@ -41,7 +40,7 @@ pub fn process_add_user_permission(
 
     //TODO: add custom logic for permissions per action
 
-    let permissions = match role {
+    let permissions = match data.role {
         Role::ATeam => &mut config.bridge_a_team,
         Role::Whitelist => &mut config.whitelists,
         Role::Operator => &mut config.bridge_operators,
@@ -51,12 +50,14 @@ pub fn process_add_user_permission(
         }
     };
 
-    if let Some(mut existing_permisson) = permissions.iter_mut().find(|perm| perm.wallet == user) {
-        existing_permisson.is_active = is_active;
+    if let Some(mut existing_permisson) =
+        permissions.iter_mut().find(|perm| perm.wallet == data.user)
+    {
+        existing_permisson.is_active = data.is_active;
     } else {
         permissions.push(UserPermission {
-            is_active,
-            wallet: user,
+            is_active: data.is_active,
+            wallet: data.user,
         });
 
         let rent = next_account_info(accounts)?;

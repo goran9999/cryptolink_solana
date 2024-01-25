@@ -13,6 +13,7 @@ use solana_program::{
 use crate::{
     constants::MESSENGER_SEED,
     error::MessengerError,
+    instruction::SetExsig,
     state::config::{Exsig, ForeignAddress, MessengerConfig},
     utils::{assert_account_signer, check_keys_eq, check_seeds, transfer_sol},
 };
@@ -20,7 +21,7 @@ use crate::{
 pub fn process_set_exsig(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
-    exsig: ForeignAddress,
+    data: SetExsig,
 ) -> ProgramResult {
     let accounts = &mut accounts.iter();
 
@@ -67,7 +68,7 @@ pub fn process_set_exsig(
 
     config.exsig.push(Exsig {
         recipient: previous_ix.program_id,
-        sig: exsig,
+        sig: data.exsig,
     });
 
     raw_config

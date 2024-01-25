@@ -8,14 +8,7 @@ pub enum V3Instruction {
     InitializeConfig {
         accountant: Pubkey,
     },
-    Process {
-        tx_id: u128,
-        source_chain: u32,
-        destination_chain: u32,
-        sender: ForeignAddress,
-        recipient: ForeignAddress,
-        data: Vec<u8>,
-    },
+
     AddUserPermission {
         user: Pubkey,
         is_active: bool,
@@ -37,4 +30,57 @@ pub enum V3Instruction {
     SetExsig {
         exsig: ForeignAddress,
     },
+
+    ReceiveMessage {
+        tx_id: u128,
+        dest_chain_id: u32,
+        receiver: Pubkey,
+        data: Vec<Vec<u8>>,
+        source_chain_id: u32,
+        sender: ForeignAddress,
+    },
+}
+
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct ReceiveMessage {
+    pub tx_id: u128,
+    pub dest_chain_id: u32,
+    pub receiver: Pubkey,
+    pub data: Vec<Vec<u8>>,
+    pub source_chain_id: u32,
+    pub sender: ForeignAddress,
+}
+
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct SetExsig {
+    pub exsig: ForeignAddress,
+}
+
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct SendMessage {
+    pub recipient: ForeignAddress,
+    pub chain: u32,
+    pub confirmations: u16,
+    pub data: Vec<u8>,
+}
+
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct ChangeConfig {
+    pub enabled_chains: Option<Vec<u32>>,
+    pub bridge_enabled: Option<bool>,
+    pub accountant: Option<Pubkey>,
+    pub whitelist_only: Option<bool>,
+    pub chainsig: Option<ForeignAddress>,
+}
+
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct InitializeConfig {
+    pub accountant: Pubkey,
+}
+
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct AddUserPermission {
+    pub user: Pubkey,
+    pub is_active: bool,
+    pub role: Role,
 }

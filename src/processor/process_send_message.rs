@@ -14,6 +14,7 @@ use solana_program::{
 use crate::{
     constants::{CALLER_INSTRUCTION_DISCRIMINATOR, CALLER_PROGRAM, MESSAGE_SEED, MESSENGER_SEED},
     error::MessengerError,
+    instruction::SendMessage,
     state::{
         config::{ForeignAddress, MessengerConfig, Role},
         message::Message,
@@ -26,10 +27,7 @@ use crate::{
 pub fn process_send_message(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
-    recipient: ForeignAddress,
-    chain: u32,
-    data: Vec<u8>,
-    confirmations: u16,
+    data: SendMessage,
 ) -> ProgramResult {
     let accounts = &mut accounts.iter();
 
@@ -66,7 +64,7 @@ pub fn process_send_message(
         return Err(MessengerError::InvalidPreInstruction.into());
     }
 
-    let total_len = Message::LEN + data.len();
+    let total_len = Message::LEN + data.data.len();
     if raw_message.data_is_empty() {
         let lamports = Rent::default().minimum_balance(total_len);
 
@@ -97,7 +95,7 @@ pub fn process_send_message(
         return Err(MessengerError::BrigdeNotEnabled.into());
     }
 
-    let chain_exist = config.enabled_chains.iter().any(|c| *c == chain);
+    let chain_exist = config.enabled_chains.iter().any(|c| *c == data.chain);
 
     if !chain_exist {
         return Err(MessengerError::ChainNotSupported.into());
@@ -113,10 +111,10 @@ pub fn process_send_message(
 
     raw_message.data.borrow_mut().copy_from_slice(
         &Message {
-            chain,
-            confirmations,
-            data,
-            recipient,
+            chain: data.chain,
+            confirmations: data.confirmations,
+            data: data.data,
+            recipient: data.recipient,
             sender: *sender.key,
             tx_id: next_tx_id,
         }
