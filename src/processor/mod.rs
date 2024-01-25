@@ -11,7 +11,8 @@ mod process_send_message;
 mod process_set_exsig;
 
 use crate::instruction::{
-    AddUserPermission, ChangeConfig, InitializeConfig, SendMessage, SetExsig, V3Instruction,
+    AddUserPermission, ChangeConfig, InitializeConfig, ReceiveMessage, SendMessage, SetExsig,
+    V3Instruction,
 };
 
 pub fn process_instruction(
@@ -84,7 +85,18 @@ pub fn process_instruction(
             data,
             source_chain_id,
             sender,
-        } => {}
+        } => process_receive_message::process_receive_message(
+            ReceiveMessage {
+                tx_id,
+                dest_chain_id,
+                receiver,
+                data,
+                source_chain_id,
+                sender,
+            },
+            program_id,
+            accounts,
+        )?,
     }
 
     Ok(())

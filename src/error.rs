@@ -31,6 +31,8 @@ pub enum MessengerError {
     InvalidPreInstruction,
     #[error("MessageV3: Exsig already added for given recipient")]
     ExsigExists,
+    #[error("MessageV3: Invalid signature")]
+    InvalidSignature,
 }
 
 impl From<MessengerError> for ProgramError {
