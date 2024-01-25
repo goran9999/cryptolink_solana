@@ -11,7 +11,7 @@ use solana_program::{
 
 use crate::{
     constants::MESSENGER_SEED,
-    state::config::MessengerConfig,
+    state::config::{ForeignAddress, MessengerConfig},
     utils::{check_keys_eq, check_seeds, transfer_sol},
 };
 
@@ -20,6 +20,7 @@ pub fn process_change_config(
     bridge_enabled: Option<bool>,
     accountant: Option<Pubkey>,
     whitelist_only: Option<bool>,
+    chainsig: Option<ForeignAddress>,
     accounts: &[AccountInfo],
     program_id: &Pubkey,
 ) -> ProgramResult {
@@ -65,6 +66,8 @@ pub fn process_change_config(
 
         config.enabled_chains = chains;
     }
+
+    config.chainsig = chainsig;
 
     raw_config
         .data

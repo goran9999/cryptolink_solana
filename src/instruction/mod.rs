@@ -26,6 +26,7 @@ pub enum V3Instruction {
         bridge_enabled: Option<bool>,
         accountant: Option<Pubkey>,
         whitelist_only: Option<bool>,
+        chainsig: Option<ForeignAddress>,
     },
     Send {
         recipient: ForeignAddress,

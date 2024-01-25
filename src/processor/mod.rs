@@ -42,11 +42,13 @@ pub fn process_instruction(
             bridge_enabled,
             accountant,
             whitelist_only,
+            chainsig,
         } => process_change_config::process_change_config(
             enabled_chains,
             bridge_enabled,
             accountant,
             whitelist_only,
+            chainsig,
             accounts,
             program_id,
         )?,
