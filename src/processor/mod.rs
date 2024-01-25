@@ -7,6 +7,7 @@ mod process_add_user_permission;
 mod process_change_config;
 mod process_initialize_config;
 mod process_send_message;
+mod process_set_exsig;
 
 use crate::instruction::V3Instruction;
 
@@ -62,6 +63,9 @@ pub fn process_instruction(
             data,
             confirmations,
         )?,
+        V3Instruction::SetExsig { exsig } => {
+            process_set_exsig::process_set_exsig(program_id, accounts, exsig)?
+        }
     }
 
     Ok(())

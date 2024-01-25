@@ -15,6 +15,8 @@ pub struct MessengerConfig {
     pub bridge_a_team: Vec<UserPermission>,
     pub accountant: Pubkey,
     pub whitelist_only: bool,
+    pub chainsig: Option<ForeignAddress>,
+    pub exsig: Vec<Exsig>,
 }
 
 impl MessengerConfig {
@@ -31,6 +33,8 @@ impl MessengerConfig {
             bridge_a_team: vec![],
             accountant: accountant.clone(),
             whitelist_only: false,
+            exsig: vec![],
+            chainsig: None,
         }
     }
 }
@@ -54,4 +58,14 @@ pub struct UserPermission {
 
 impl UserPermission {
     pub const LEN: usize = 32 + 1;
+}
+
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct Exsig {
+    pub recipient: Pubkey,
+    pub sig: ForeignAddress,
+}
+
+impl Exsig {
+    pub const LEN: usize = 8 + 32 + 32;
 }

@@ -52,7 +52,10 @@ pub fn process_initialize_config(
         &[MESSENGER_SEED],
     )?;
 
-    config.data.borrow_mut().copy_from_slice(&new_config);
+    config
+        .data
+        .borrow_mut()
+        .serialize(&mut new_config.try_to_vec().unwrap())?;
 
     Ok(())
 }

@@ -1,4 +1,5 @@
 use borsh::BorshSerialize;
+
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     borsh0_10::try_from_slice_unchecked,
@@ -68,7 +69,7 @@ pub fn process_change_config(
     raw_config
         .data
         .borrow_mut()
-        .copy_from_slice(&config.try_to_vec().unwrap());
+        .serialize(&mut config.try_to_vec().unwrap())?;
 
     Ok(())
 }

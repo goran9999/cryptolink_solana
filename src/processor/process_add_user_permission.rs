@@ -79,7 +79,7 @@ pub fn process_add_user_permission(
     raw_config
         .data
         .borrow_mut()
-        .copy_from_slice(&config.try_to_vec().unwrap());
+        .serialize(&mut config.try_to_vec().unwrap())?;
 
     Ok(())
 }

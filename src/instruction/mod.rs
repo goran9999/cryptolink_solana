@@ -33,4 +33,7 @@ pub enum V3Instruction {
         confirmations: u16,
         data: Vec<u8>,
     },
+    SetExsig {
+        exsig: ForeignAddress,
+    },
 }

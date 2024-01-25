@@ -29,6 +29,8 @@ pub enum MessengerError {
     InvalidInstructionIndex,
     #[error("MessageV3: Invalid pre-instruction")]
     InvalidPreInstruction,
+    #[error("MessageV3: Exsig already added for given recipient")]
+    ExsigExists,
 }
 
 impl From<MessengerError> for ProgramError {
