@@ -52,11 +52,6 @@ pub fn process_receive_message(
         return Err(MessengerError::ChainNotSupported.into());
     }
 
-    let mut digest = receive_message.try_to_vec().unwrap();
-
-    //reverse because EVM uses Big-Endian while Solana uses Little-Endian
-    digest.reverse();
-
     //TODO:find best way to store processed txs
 
     if let Some(exsig) = config
@@ -73,13 +68,14 @@ pub fn process_receive_message(
             return Err(MessengerError::InvalidSignature.into());
         }
 
-        let recovered_signer =
-            secp256k1_recover(&digest, exsig_vrs_bytes[0], &exsig_vrs_bytes[1..])
-                .expect("Failed to recover secp256k1 sig");
+        let recovered_signer = secp256k1_recover(
+            &exsig_vrs_bytes[65..],
+            exsig_vrs_bytes[0],
+            &exsig_vrs_bytes[1..65],
+        )
+        .expect("Failed to recover secp256k1 sig");
 
         let signer = recovered_signer.0.try_to_vec().unwrap();
-
-        //TODO:check how this would look when deserialized (little or big endian)
 
         if signer.as_slice() != exsig.sig {
             return Err(MessengerError::InvalidSignature.into());
@@ -96,15 +92,18 @@ pub fn process_receive_message(
             return Err(MessengerError::InvalidSignature.into());
         }
 
-        let recovered_chainsig =
-            secp256k1_recover(&digest, chainsig_vrs_bytes[0], &chainsig_vrs_bytes[1..])
-                .expect("Failed to recover secp256k1 sig");
+        let recovered_chainsig = secp256k1_recover(
+            &chainsig_vrs_bytes[65..],
+            chainsig_vrs_bytes[0],
+            &chainsig_vrs_bytes[1..65],
+        )
+        .expect("Failed to recover secp256k1 sig");
 
-        let chainsig_address = recovered_chainsig.0;
+        let mut chainsig_address = recovered_chainsig.0;
 
-        // if chainsig_address != chainsig {
-        //     return Err(MessengerError::InvalidSignature.into());
-        // }
+        if chainsig_address[12..] != chainsig[12..] {
+            return Err(MessengerError::InvalidSignature.into());
+        }
     }
 
     let cpi_accounts: Vec<AccountMeta> = accounts[2..]

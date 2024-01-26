@@ -16,9 +16,9 @@ use crate::instruction::{
 };
 
 pub fn process_instruction(
-    data: &[u8],
-    accounts: &[AccountInfo],
     program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    data: &[u8],
 ) -> ProgramResult {
     let instruction = try_from_slice_unchecked::<V3Instruction>(data)?;
 

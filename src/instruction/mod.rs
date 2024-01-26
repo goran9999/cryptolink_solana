@@ -1,7 +1,14 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use solana_program::pubkey::Pubkey;
+use solana_program::{
+    instruction::{AccountMeta, Instruction},
+    pubkey::Pubkey,
+    system_program,
+};
 
-use crate::state::config::{ForeignAddress, Role};
+use crate::{
+    constants::MESSENGER_SEED,
+    state::config::{ForeignAddress, Role},
+};
 
 #[derive(BorshDeserialize, BorshSerialize, PartialEq, PartialOrd, Clone)]
 pub enum V3Instruction {
@@ -83,4 +90,42 @@ pub struct AddUserPermission {
     pub user: Pubkey,
     pub is_active: bool,
     pub role: Role,
+}
+
+pub fn initialize_config(accountant: Pubkey, payer: Pubkey, program_id: &Pubkey) -> Instruction {
+    let mut accounts: Vec<AccountMeta> = vec![];
+
+    let mut data: Vec<u8> = vec![];
+
+    accounts.push(AccountMeta {
+        pubkey: payer,
+        is_signer: true,
+        is_writable: true,
+    });
+
+    let (config, _) = Pubkey::find_program_address(&[MESSENGER_SEED], program_id);
+
+    accounts.push(AccountMeta {
+        pubkey: config,
+        is_signer: false,
+        is_writable: true,
+    });
+
+    accounts.push(AccountMeta {
+        pubkey: system_program::id(),
+        is_signer: false,
+        is_writable: false,
+    });
+
+    data.extend_from_slice(
+        &V3Instruction::InitializeConfig { accountant }
+            .try_to_vec()
+            .unwrap(),
+    );
+
+    Instruction {
+        program_id: *program_id,
+        accounts,
+        data,
+    }
 }
