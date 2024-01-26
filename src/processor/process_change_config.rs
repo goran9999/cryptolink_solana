@@ -12,7 +12,7 @@ use solana_program::{
 use crate::{
     constants::MESSENGER_SEED,
     instruction::ChangeConfig,
-    state::config::{ForeignAddress, MessengerConfig},
+    state::config::MessengerConfig,
     utils::{check_keys_eq, check_seeds, transfer_sol},
 };
 

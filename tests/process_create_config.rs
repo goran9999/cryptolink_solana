@@ -1,16 +1,22 @@
 #![cfg(feature = "test-sbf")]
 
+mod utils;
+use std::println;
+
 use solana_program::pubkey::Pubkey;
 
 use crate::utils::ProgramTestBench;
-use std::println;
+use solana_program_test::tokio;
 
 #[tokio::test]
-pub async fn process_create_config() {
-    let test = ProgramTestBench::start_impl().await;
+pub async fn test_create_config() {
+    let test = &mut ProgramTestBench::start_impl().await;
+
     let ix = mv3_contract_solana::instruction::initialize_config(
         Pubkey::new_unique(),
-        Pubkey::new_from_array(test.payer.to_bytes()),
-        program_id,
+        test.payer_pk,
+        &test.program_id,
     );
+
+    test.process_transaction(&[ix]).await;
 }

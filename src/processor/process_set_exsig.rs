@@ -14,7 +14,7 @@ use crate::{
     constants::MESSENGER_SEED,
     error::MessengerError,
     instruction::SetExsig,
-    state::config::{Exsig, ForeignAddress, MessengerConfig},
+    state::config::{Exsig, MessengerConfig},
     utils::{assert_account_signer, check_keys_eq, check_seeds, transfer_sol},
 };
 

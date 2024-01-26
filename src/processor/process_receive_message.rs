@@ -99,7 +99,7 @@ pub fn process_receive_message(
         )
         .expect("Failed to recover secp256k1 sig");
 
-        let mut chainsig_address = recovered_chainsig.0;
+        let chainsig_address = recovered_chainsig.0;
 
         if chainsig_address[12..] != chainsig[12..] {
             return Err(MessengerError::InvalidSignature.into());
@@ -126,13 +126,13 @@ pub fn process_receive_message(
         data: cpi_data.clone(),
     };
 
-    let result = invoke(&ix, &accounts[2..]);
+    let _result = invoke(&ix, &accounts[2..]);
 
     //TODO: store failed and succeeded tx
-    match result {
-        Ok(()) => {}
-        Err(ProgramError) => {}
-    }
+    // match result {
+    //     Ok(()) => {}
+    //     Err(err) => {}
+    // }
 
     Ok(())
 }

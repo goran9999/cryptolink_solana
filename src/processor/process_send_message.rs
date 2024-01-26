@@ -16,7 +16,7 @@ use crate::{
     error::MessengerError,
     instruction::SendMessage,
     state::{
-        config::{ForeignAddress, MessengerConfig, Role},
+        config::{MessengerConfig, Role},
         message::Message,
     },
     utils::{
