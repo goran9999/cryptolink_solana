@@ -4,6 +4,7 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     borsh0_10::try_from_slice_unchecked,
     entrypoint::ProgramResult,
+    msg,
     pubkey::Pubkey,
     rent::Rent,
     system_program::ID,
@@ -69,7 +70,12 @@ pub fn process_change_config(
     raw_config
         .data
         .borrow_mut()
-        .serialize(&mut config.try_to_vec().unwrap())?;
+        .copy_from_slice(&config.try_to_vec().unwrap());
+
+    // raw_config
+    //     .data
+    //     .borrow_mut()
+    //     .serialize(&mut config.try_to_vec().unwrap())?;
 
     Ok(())
 }

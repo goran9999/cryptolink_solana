@@ -53,9 +53,10 @@ pub fn process_initialize_config(
     )?;
 
     transfer_sol(payer, config, lamports, system_program, None)?;
-    msg!("DATA LEN: {:?}", config.data_len());
 
     config.data.borrow_mut().copy_from_slice(&new_config);
+
+    msg!("DATA LEN: {:?}", config.data_len());
 
     // config
     //     .data

@@ -33,6 +33,8 @@ pub enum MessengerError {
     ExsigExists,
     #[error("MessageV3: Invalid signature")]
     InvalidSignature,
+    #[error("MessageV3: Invalid instruction")]
+    InvalidInstruction,
 }
 
 impl From<MessengerError> for ProgramError {

@@ -1,5 +1,5 @@
 use solana_program::{
-    account_info::AccountInfo, borsh0_10::try_from_slice_unchecked, entrypoint::ProgramResult,
+    account_info::AccountInfo, borsh0_10::try_from_slice_unchecked, entrypoint::ProgramResult, msg,
     pubkey::Pubkey,
 };
 
@@ -10,9 +10,12 @@ mod process_receive_message;
 mod process_send_message;
 mod process_set_exsig;
 
-use crate::instruction::{
-    AddUserPermission, ChangeConfig, InitializeConfig, ReceiveMessage, SendMessage, SetExsig,
-    V3Instruction,
+use crate::{
+    error::MessengerError,
+    instruction::{
+        AddUserPermission, ChangeConfig, InitializeConfig, ReceiveMessage, SendMessage, SetExsig,
+        V3Instruction,
+    },
 };
 
 pub fn process_instruction(
@@ -24,6 +27,7 @@ pub fn process_instruction(
 
     match instruction {
         V3Instruction::InitializeConfig { accountant } => {
+            msg!("MessageV3: Initialize Config!");
             process_initialize_config::process_initialize_config(
                 accounts,
                 program_id,
@@ -49,17 +53,21 @@ pub fn process_instruction(
             accountant,
             whitelist_only,
             chainsig,
-        } => process_change_config::process_change_config(
-            accounts,
-            program_id,
-            ChangeConfig {
-                accountant,
-                whitelist_only,
-                chainsig,
-                enabled_chains,
-                bridge_enabled,
-            },
-        )?,
+        } => {
+            msg!("MessageV3: Modify Config!");
+
+            process_change_config::process_change_config(
+                accounts,
+                program_id,
+                ChangeConfig {
+                    accountant,
+                    whitelist_only,
+                    chainsig,
+                    enabled_chains,
+                    bridge_enabled,
+                },
+            )?
+        }
         V3Instruction::Send {
             recipient,
             chain,
@@ -97,6 +105,11 @@ pub fn process_instruction(
             program_id,
             accounts,
         )?,
+        _ => {
+            msg!("MessageV3: Instruction not found!");
+
+            return Err(MessengerError::InvalidInstruction.into());
+        }
     }
 
     Ok(())
