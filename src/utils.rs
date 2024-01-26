@@ -1,6 +1,7 @@
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
+    msg,
     program::{invoke, invoke_signed},
     program_error::ProgramError,
     pubkey::Pubkey,
@@ -22,13 +23,14 @@ pub fn initialize_account<'a, 'b>(
     seeds: &[&[u8]],
 ) -> ProgramResult {
     let rent = Rent::default().minimum_balance(space.try_into().unwrap());
+
     let create_account_ix = create_account(from.key, account.key, rent, space, owner_program);
 
     invoke_signed(
         &create_account_ix,
         &[
-            from.to_owned(),
             account.to_owned(),
+            from.to_owned(),
             system_program.to_owned(),
         ],
         &[seeds],

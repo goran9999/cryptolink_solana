@@ -12,7 +12,7 @@ use solana_program::{
 };
 
 use crate::{
-    constants::{CALLER_INSTRUCTION_DISCRIMINATOR, CALLER_PROGRAM, MESSAGE_SEED, MESSENGER_SEED},
+    constants::{CALLER_INSTRUCTION_DISCRIMINATOR, CALLER_PROGRAM, CONFIG_SEED, MESSAGE_SEED},
     error::MessengerError,
     instruction::SendMessage,
     state::{
@@ -33,7 +33,7 @@ pub fn process_send_message(
 
     let raw_config = next_account_info(accounts)?;
 
-    check_seeds(raw_config, &[MESSENGER_SEED], program_id)?;
+    check_seeds(raw_config, &[CONFIG_SEED], program_id)?;
 
     let sender = next_account_info(accounts)?;
 

@@ -19,7 +19,7 @@ pub enum MessengerError {
     CallerNotWhitelisted,
     #[error("MessageV3: Config already initialized")]
     ConfigInitialized,
-    #[error("MessageV3: Invalid ccount seeds")]
+    #[error("MessageV3: Invalid account seeds")]
     InvalidAccountSeeds,
     #[error("MessageV3: Account not signer")]
     AccountNotSigner,

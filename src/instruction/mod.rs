@@ -6,7 +6,7 @@ use solana_program::{
 };
 
 use crate::{
-    constants::MESSENGER_SEED,
+    constants::CONFIG_SEED,
     state::config::{ForeignAddress, Role},
 };
 
@@ -103,7 +103,7 @@ pub fn initialize_config(accountant: Pubkey, payer: Pubkey, program_id: &Pubkey)
         is_writable: true,
     });
 
-    let (config, _) = Pubkey::find_program_address(&[MESSENGER_SEED], program_id);
+    let (config, _) = Pubkey::find_program_address(&[CONFIG_SEED], program_id);
 
     accounts.push(AccountMeta {
         pubkey: config,

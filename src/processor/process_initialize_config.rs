@@ -1,4 +1,4 @@
-use crate::constants::MESSENGER_SEED;
+use crate::constants::CONFIG_SEED;
 use crate::error::MessengerError;
 use crate::instruction::InitializeConfig;
 use crate::state::config::MessengerConfig;
@@ -31,7 +31,7 @@ pub fn process_initialize_config(
 
     check_keys_eq(system_program.key, &ID)?;
 
-    let bump = check_seeds(config, &[MESSENGER_SEED], &program_id)?;
+    let bump = check_seeds(config, &[CONFIG_SEED], &program_id)?;
 
     if !config.data_is_empty() {
         return Err(MessengerError::ConfigInitialized.into());
@@ -43,21 +43,24 @@ pub fn process_initialize_config(
 
     let lamports = Rent::default().minimum_balance(new_config.len());
 
-    transfer_sol(payer, config, lamports, system_program, None)?;
-
     initialize_account(
         payer,
         config,
         system_program,
         new_config.len() as u64,
         &program_id,
-        &[MESSENGER_SEED, &[bump]],
+        &[CONFIG_SEED, &[bump]],
     )?;
 
-    config
-        .data
-        .borrow_mut()
-        .serialize(&mut new_config.try_to_vec().unwrap())?;
+    transfer_sol(payer, config, lamports, system_program, None)?;
+    msg!("DATA LEN: {:?}", config.data_len());
+
+    config.data.borrow_mut().copy_from_slice(&new_config);
+
+    // config
+    //     .data
+    //     .borrow_mut()
+    //     .serialize(&mut new_config.try_to_vec().unwrap())?;
 
     Ok(())
 }

@@ -9,7 +9,7 @@ use solana_program::{
 };
 
 use crate::{
-    constants::MESSENGER_SEED,
+    constants::CONFIG_SEED,
     error::MessengerError,
     instruction::AddUserPermission,
     state::config::{MessengerConfig, Role, UserPermission},
@@ -27,7 +27,7 @@ pub fn process_add_user_permission(
 
     let raw_config = next_account_info(accounts)?;
 
-    check_seeds(raw_config, &[MESSENGER_SEED], program_id)?;
+    check_seeds(raw_config, &[CONFIG_SEED], program_id)?;
 
     let system_program = next_account_info(accounts)?;
 

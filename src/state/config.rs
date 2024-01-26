@@ -1,7 +1,7 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::pubkey::Pubkey;
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, Debug)]
 pub struct MessengerConfig {
     pub owner: Pubkey,
     pub next_tx_id: u128,
@@ -50,7 +50,7 @@ pub enum Role {
 
 pub type ForeignAddress = [u8; 32];
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, Debug)]
 pub struct UserPermission {
     pub wallet: Pubkey,
     pub is_active: bool,
@@ -60,7 +60,7 @@ impl UserPermission {
     pub const LEN: usize = 32 + 1;
 }
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, Debug)]
 pub struct Exsig {
     pub recipient: Pubkey,
     pub sig: ForeignAddress,

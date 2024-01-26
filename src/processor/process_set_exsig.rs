@@ -11,7 +11,7 @@ use solana_program::{
 };
 
 use crate::{
-    constants::MESSENGER_SEED,
+    constants::CONFIG_SEED,
     error::MessengerError,
     instruction::SetExsig,
     state::config::{Exsig, MessengerConfig},
@@ -31,7 +31,7 @@ pub fn process_set_exsig(
 
     let raw_config = next_account_info(accounts)?;
 
-    check_seeds(raw_config, &[MESSENGER_SEED], program_id)?;
+    check_seeds(raw_config, &[CONFIG_SEED], program_id)?;
 
     let mut config: MessengerConfig = try_from_slice_unchecked(&raw_config.data.borrow_mut())?;
 

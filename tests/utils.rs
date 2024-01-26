@@ -49,11 +49,17 @@ impl ProgramTestBench {
             recent_blockhash,
         );
 
-        let sim = self.client.simulate_transaction(tx.clone()).await.unwrap();
+        // let sim = self.client.simulate_transaction(tx.clone()).await.unwrap();
 
-        println!("SIM");
+        // println!("SIM: {:?}", sim.result.unwrap());
 
-        self.client.send_transaction(tx).await.unwrap();
+        self.client
+            .process_transaction_with_commitment(
+                tx,
+                solana_sdk::commitment_config::CommitmentLevel::Finalized,
+            )
+            .await
+            .unwrap();
 
         Ok(())
     }
