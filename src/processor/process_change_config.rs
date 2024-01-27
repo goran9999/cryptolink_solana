@@ -72,10 +72,5 @@ pub fn process_change_config(
         .borrow_mut()
         .copy_from_slice(&config.try_to_vec().unwrap());
 
-    // raw_config
-    //     .data
-    //     .borrow_mut()
-    //     .serialize(&mut config.try_to_vec().unwrap())?;
-
     Ok(())
 }

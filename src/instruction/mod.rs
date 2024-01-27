@@ -2,6 +2,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
+    rent::Rent,
     system_program,
 };
 
@@ -162,6 +163,58 @@ pub fn change_config(program_id: Pubkey, payer: Pubkey, data: ChangeConfig) -> I
             accountant: data.accountant,
             whitelist_only: data.whitelist_only,
             chainsig: data.chainsig,
+        }
+        .try_to_vec()
+        .unwrap(),
+    );
+
+    Instruction {
+        program_id,
+        accounts,
+        data: ix_data,
+    }
+}
+
+pub fn add_user_permission(
+    program_id: Pubkey,
+    payer: Pubkey,
+    data: AddUserPermission,
+) -> Instruction {
+    let mut accounts: Vec<AccountMeta> = vec![];
+
+    accounts.push(AccountMeta {
+        pubkey: payer,
+        is_signer: true,
+        is_writable: true,
+    });
+
+    let (config, _) = Pubkey::find_program_address(&[CONFIG_SEED], &program_id);
+
+    accounts.push(AccountMeta {
+        pubkey: config,
+        is_signer: false,
+        is_writable: true,
+    });
+
+    accounts.push(AccountMeta {
+        pubkey: system_program::id(),
+        is_signer: false,
+        is_writable: false,
+    });
+
+    accounts.push(AccountMeta {
+        pubkey: solana_program::sysvar::rent::id(),
+        is_signer: false,
+        is_writable: false,
+    });
+
+    let mut ix_data: Vec<u8> = vec![];
+
+    ix_data.extend_from_slice(
+        &V3Instruction::AddUserPermission {
+            user: data.user,
+            is_active: data.is_active,
+            role: data.role,
         }
         .try_to_vec()
         .unwrap(),

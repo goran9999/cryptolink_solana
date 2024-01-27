@@ -38,15 +38,18 @@ pub fn process_instruction(
             user,
             is_active,
             role,
-        } => process_add_user_permission::process_add_user_permission(
-            accounts,
-            program_id,
-            AddUserPermission {
-                role,
-                user,
-                is_active,
-            },
-        )?,
+        } => {
+            msg!("MessageV3: Adding user permissions!");
+            process_add_user_permission::process_add_user_permission(
+                accounts,
+                program_id,
+                AddUserPermission {
+                    role,
+                    user,
+                    is_active,
+                },
+            )?
+        }
         V3Instruction::ChangeConfig {
             enabled_chains,
             bridge_enabled,

@@ -56,12 +56,5 @@ pub fn process_initialize_config(
 
     config.data.borrow_mut().copy_from_slice(&new_config);
 
-    msg!("DATA LEN: {:?}", config.data_len());
-
-    // config
-    //     .data
-    //     .borrow_mut()
-    //     .serialize(&mut new_config.try_to_vec().unwrap())?;
-
     Ok(())
 }
