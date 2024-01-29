@@ -108,11 +108,6 @@ pub fn process_instruction(
             program_id,
             accounts,
         )?,
-        _ => {
-            msg!("MessageV3: Instruction not found!");
-
-            return Err(MessengerError::InvalidInstruction.into());
-        }
     }
 
     Ok(())
