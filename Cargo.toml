@@ -28,6 +28,10 @@ crate-type = ["cdylib", "lib"]
 name="create_config"
 path="tests/scripts/create_config.rs"
 
+[[bin]]
+name='set_exsig'
+path="tests/scripts/set_chainsig.rs"
+
 
 [features]
 no-entrypoint = []
