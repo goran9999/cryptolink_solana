@@ -4,6 +4,7 @@ use solana_program::{
     borsh0_10::try_from_slice_unchecked,
     entrypoint::ProgramResult,
     instruction::{AccountMeta, Instruction},
+    msg,
     program::invoke,
     pubkey::Pubkey,
     secp256k1_recover::secp256k1_recover,
@@ -98,6 +99,8 @@ pub fn process_receive_message(
             &chainsig_vrs_bytes[1..65],
         )
         .expect("Failed to recover secp256k1 sig");
+
+        msg!("CHAINSIG: {:?}", recovered_chainsig.0);
 
         let chainsig_address = recovered_chainsig.0;
 
