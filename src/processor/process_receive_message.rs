@@ -34,24 +34,24 @@ pub fn process_receive_message(
     let config: MessengerConfig = try_from_slice_unchecked(&raw_config.data.borrow())?;
 
     //only operator can sign message processing
-    role_guard(&config, signer, Role::Operator)?;
+    // role_guard(&config, signer, Role::Operator)?;
 
-    if !config.bridge_enabled {
-        return Err(MessengerError::BrigdeNotEnabled.into());
-    }
+    // if !config.bridge_enabled {
+    //     return Err(MessengerError::BrigdeNotEnabled.into());
+    // }
 
-    if receive_message.dest_chain_id != SOLANA_CHAIN_ID {
-        return Err(MessengerError::ChainNotSupported.into());
-    }
+    // if receive_message.dest_chain_id != SOLANA_CHAIN_ID {
+    //     return Err(MessengerError::ChainNotSupported.into());
+    // }
 
-    let src_chain_exists = config
-        .enabled_chains
-        .into_iter()
-        .any(|c| c == receive_message.source_chain_id);
+    // let src_chain_exists = config
+    //     .enabled_chains
+    //     .into_iter()
+    //     .any(|c| c == receive_message.source_chain_id);
 
-    if !src_chain_exists {
-        return Err(MessengerError::ChainNotSupported.into());
-    }
+    // if !src_chain_exists {
+    //     return Err(MessengerError::ChainNotSupported.into());
+    // }
 
     //TODO:find best way to store processed txs
 
@@ -64,6 +64,8 @@ pub fn process_receive_message(
             .data
             .get(0)
             .expect("Missing Exsig vrs bytes!");
+
+        msg!("EXSIG EXISTS!");
 
         if exsig_vrs_bytes.len() != 65 {
             return Err(MessengerError::InvalidSignature.into());
@@ -89,14 +91,14 @@ pub fn process_receive_message(
             .get(1)
             .expect("Missing Chainsig vrs bytes!");
 
-        if chainsig_vrs_bytes.len() != 65 {
-            return Err(MessengerError::InvalidSignature.into());
-        }
+        msg!("VRS BYTES: {:?}", &chainsig_vrs_bytes[65..]);
+
+        msg!("RECOVERY ID: {:?}", chainsig_vrs_bytes[64]);
 
         let recovered_chainsig = secp256k1_recover(
             &chainsig_vrs_bytes[65..],
-            chainsig_vrs_bytes[0],
-            &chainsig_vrs_bytes[1..65],
+            chainsig_vrs_bytes[64] - 27,
+            &chainsig_vrs_bytes[..64],
         )
         .expect("Failed to recover secp256k1 sig");
 
@@ -118,18 +120,18 @@ pub fn process_receive_message(
         })
         .collect();
 
-    let cpi_data = receive_message
-        .data
-        .get(2)
-        .expect("Missing target program data");
+    // let cpi_data = receive_message
+    //     .data
+    //     .get(2)
+    //     .expect("Missing target program data");
 
-    let ix: Instruction = Instruction {
-        program_id: receive_message.receiver,
-        accounts: cpi_accounts,
-        data: cpi_data.clone(),
-    };
+    // let ix: Instruction = Instruction {
+    //     program_id: receive_message.receiver,
+    //     accounts: cpi_accounts,
+    //     data: cpi_data.clone(),
+    // };
 
-    let _result = invoke(&ix, &accounts[2..]);
+    // let _result = invoke(&ix, &accounts[2..]);
 
     //TODO: store failed and succeeded tx
     // match result {

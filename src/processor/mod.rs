@@ -96,18 +96,22 @@ pub fn process_instruction(
             data,
             source_chain_id,
             sender,
-        } => process_receive_message::process_receive_message(
-            ReceiveMessage {
-                tx_id,
-                dest_chain_id,
-                receiver,
-                data,
-                source_chain_id,
-                sender,
-            },
-            program_id,
-            accounts,
-        )?,
+        } => {
+            msg!("MessageV3: Receive Message!");
+
+            process_receive_message::process_receive_message(
+                ReceiveMessage {
+                    tx_id,
+                    dest_chain_id,
+                    receiver,
+                    data,
+                    source_chain_id,
+                    sender,
+                },
+                program_id,
+                accounts,
+            )?
+        }
     }
 
     Ok(())

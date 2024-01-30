@@ -1,9 +1,10 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
+    address_lookup_table::instruction,
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
     rent::Rent,
-    system_program,
+    system_program, sysvar,
 };
 
 use crate::{
@@ -222,6 +223,58 @@ pub fn add_user_permission(
 
     Instruction {
         program_id,
+        accounts,
+        data: ix_data,
+    }
+}
+
+pub fn receive_message(
+    program_id: &Pubkey,
+    data: ReceiveMessage,
+    payer: Pubkey,
+    target_accounts: Vec<AccountMeta>,
+) -> Instruction {
+    let mut accounts: Vec<AccountMeta> = vec![];
+
+    accounts.push(AccountMeta {
+        pubkey: payer,
+        is_signer: true,
+        is_writable: true,
+    });
+
+    let (config, _) = Pubkey::find_program_address(&[CONFIG_SEED], &program_id);
+
+    accounts.push(AccountMeta {
+        pubkey: config,
+        is_signer: false,
+        is_writable: true,
+    });
+
+    accounts.push(AccountMeta {
+        pubkey: sysvar::instructions::id(),
+        is_signer: false,
+        is_writable: false,
+    });
+
+    accounts.extend(target_accounts.into_iter());
+
+    let mut ix_data: Vec<u8> = vec![];
+
+    ix_data.extend_from_slice(
+        &V3Instruction::ReceiveMessage {
+            tx_id: data.tx_id,
+            dest_chain_id: data.dest_chain_id,
+            receiver: data.receiver,
+            data: data.data,
+            source_chain_id: data.source_chain_id,
+            sender: data.sender,
+        }
+        .try_to_vec()
+        .unwrap(),
+    );
+
+    Instruction {
+        program_id: program_id.clone(),
         accounts,
         data: ix_data,
     }

@@ -65,6 +65,14 @@ pub fn process_change_config(
         config.enabled_chains = chains;
     }
 
+    if data.chainsig.is_some() && config.chainsig.is_none() {
+        let additional_rent = Rent::default().minimum_balance(32_usize);
+
+        transfer_sol(authority, raw_config, additional_rent, system_program, None)?;
+
+        raw_config.realloc(raw_config.data_len().checked_add(32).unwrap(), false)?;
+    }
+
     config.chainsig = data.chainsig;
 
     raw_config

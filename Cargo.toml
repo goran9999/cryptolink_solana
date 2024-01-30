@@ -12,12 +12,15 @@ borsh="0.10"
 ethnum = "1.5.0"
 thiserror = "1.0"
 
+
+
 [dev-dependencies]
 solana-program-test="1.17.1"
 solana-sdk = "1.17.13"
 keccak-hash = "0.10.0"
 
 [lib]
+name="mv3_contract_solana"
 crate-type = ["cdylib", "lib"]
 
 
