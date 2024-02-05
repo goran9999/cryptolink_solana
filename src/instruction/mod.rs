@@ -226,12 +226,7 @@ pub fn add_user_permission(
     }
 }
 
-pub fn receive_message(
-    program_id: &Pubkey,
-    data: ReceiveMessage,
-    payer: Pubkey,
-    target_accounts: Vec<AccountMeta>,
-) -> Instruction {
+pub fn receive_message(program_id: &Pubkey, data: ReceiveMessage, payer: Pubkey) -> Instruction {
     let mut accounts: Vec<AccountMeta> = vec![];
 
     accounts.push(AccountMeta {
@@ -253,8 +248,6 @@ pub fn receive_message(
         is_signer: false,
         is_writable: false,
     });
-
-    accounts.extend(target_accounts.into_iter());
 
     let mut ix_data: Vec<u8> = vec![];
 
