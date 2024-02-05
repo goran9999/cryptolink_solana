@@ -15,4 +15,9 @@ spl-program-error = "0.3.0"
 
 
 [lib]
-crate-type = ["cdylib"]
+name="message_hook"
+crate-type = ["cdylib","lib"]
+
+[features]
+no-entrypoint = []
+test-sbf = []

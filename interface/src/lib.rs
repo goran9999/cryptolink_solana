@@ -1,5 +1,6 @@
 mod error;
 pub mod instruction;
+pub mod offchain;
 pub mod onchain;
 
 pub use solana_program;

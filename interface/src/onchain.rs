@@ -7,8 +7,8 @@ use crate::{error::MessageHookError, get_extra_account_metas_address, instructio
 
 pub fn invoke_execute<'a>(
     program_id: &Pubkey,
-    message: AccountInfo<'a>,
-    sysvar_instructions: AccountInfo<'a>,
+    message: &AccountInfo<'a>,
+    sysvar_instructions: &AccountInfo<'a>,
     additional_accounts: &[AccountInfo<'a>],
     data: Vec<u8>,
 ) -> ProgramResult {
@@ -21,7 +21,11 @@ pub fn invoke_execute<'a>(
 
     let mut cpi_instruction = instruction::execute(program_id, message.key, &validate_pubkey, data);
 
-    let mut cpi_account_infos = vec![message, sysvar_instructions, validate_account_info.clone()];
+    let mut cpi_account_infos = vec![
+        message.clone(),
+        sysvar_instructions.clone(),
+        validate_account_info.clone(),
+    ];
 
     ExtraAccountMetaList::add_to_cpi_instruction::<instruction::ProcessMessageInstruction>(
         &mut cpi_instruction,
