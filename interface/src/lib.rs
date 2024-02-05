@@ -1,6 +1,6 @@
 mod error;
-mod instruction;
-mod onchain;
+pub mod instruction;
+pub mod onchain;
 
 pub use solana_program;
 use solana_program::pubkey::Pubkey;
