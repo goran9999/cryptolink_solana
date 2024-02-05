@@ -20,14 +20,20 @@ pub fn process_instruction(
         match message_hook_instruction {
             MessageHookInstruction::InitializeExtraAccountMetaList {
                 extra_account_metas,
-            } => process_initialize_extra_account_meta_list::process_initialize_extra_account_meta_list(program_id, accounts, &extra_account_metas)?,
+            } => {
+                msg!("IX: Init extra account meta list!");
+
+                process_initialize_extra_account_meta_list::process_initialize_extra_account_meta_list(program_id, accounts, &extra_account_metas)?
+            }
             MessageHookInstruction::ProcessMessage { data } => {
+                msg!("IX: Process message");
+
                 process_process_message::process_process_message(program_id, accounts, data)?
             }
             MessageHookInstruction::UpdateExtraAccountMetaList {
                 extra_account_metas,
             } => {
-                msg!("{:?}",extra_account_metas);
+                msg!("{:?}", extra_account_metas);
             }
         }
 
@@ -43,16 +49,19 @@ pub fn process_instruction(
             symbol,
             supply,
             decimals,
-        } => process_create_token::process_create_token(
-            program_id,
-            accounts,
-            CreateToken {
-                decimals,
-                name,
-                supply,
-                symbol,
-            },
-        )?,
+        } => {
+            msg!("IX: Create Token");
+            process_create_token::process_create_token(
+                program_id,
+                accounts,
+                CreateToken {
+                    decimals,
+                    name,
+                    supply,
+                    symbol,
+                },
+            )?
+        }
         TokenInstruction::Bridge {
             destination_chain_id,
             amount,

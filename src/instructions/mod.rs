@@ -4,7 +4,7 @@ use mv3_contract_solana::state::config::ForeignAddress;
 use solana_program::{
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
-    system_program,
+    system_program, sysvar,
 };
 use spl_tlv_account_resolution::account::ExtraAccountMeta;
 
@@ -67,7 +67,7 @@ pub fn create_token(
             pubkey: token_data,
         },
         AccountMeta {
-            is_signer: false,
+            is_signer: true,
             is_writable: true,
             pubkey: mint,
         },
@@ -81,6 +81,11 @@ pub fn create_token(
             is_signer: false,
             pubkey: spl_token::id(),
         },
+        AccountMeta {
+            is_writable: false,
+            is_signer: false,
+            pubkey: sysvar::rent::id(),
+        },
     ];
 
     Instruction {
@@ -92,6 +97,7 @@ pub fn create_token(
 
 pub fn init_extra_account_meta_list(
     program_id: Pubkey,
+    authority: Pubkey,
     extra_account_metas: Vec<ExtraAccountMeta>,
 ) -> Instruction {
     let data = MessageHookInstruction::InitializeExtraAccountMetaList {
@@ -103,13 +109,33 @@ pub fn init_extra_account_meta_list(
 
     let extra_account_meta_key = get_extra_account_metas_address(&message, &program_id);
 
+    let (message_config_pda, _) =
+        Pubkey::find_program_address(&[TOKEN_SEED, authority.as_ref()], &program_id);
+
     Instruction {
         program_id,
-        accounts: vec![AccountMeta {
-            is_signer: false,
-            is_writable: true,
-            pubkey: extra_account_meta_key,
-        }],
+        accounts: vec![
+            AccountMeta {
+                is_signer: true,
+                is_writable: false,
+                pubkey: authority,
+            },
+            AccountMeta {
+                is_signer: false,
+                is_writable: true,
+                pubkey: get_message_pda(&program_id),
+            },
+            AccountMeta {
+                is_signer: false,
+                is_writable: true,
+                pubkey: extra_account_meta_key,
+            },
+            AccountMeta {
+                is_signer: false,
+                is_writable: true,
+                pubkey: system_program::id(),
+            },
+        ],
         data,
     }
 }

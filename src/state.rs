@@ -5,6 +5,7 @@ use solana_program::pubkey::Pubkey;
 pub struct TokenData {
     pub authority: Pubkey,
     pub total_supply: u64,
+    pub mint: Pubkey,
     pub total_minted: u64,
     pub total_bridged: u64,
     pub name: String,

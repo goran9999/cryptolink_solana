@@ -8,6 +8,7 @@ use mv3_contract_solana::constants::MESSAGE_SEED;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
+    msg,
     program::invoke_signed,
     program_error::ProgramError,
     pubkey::Pubkey,
@@ -15,7 +16,7 @@ use solana_program::{
 };
 use spl_tlv_account_resolution::{account::ExtraAccountMeta, state::ExtraAccountMetaList};
 
-use crate::constants::MV3_KEY;
+use crate::{constants::MV3_KEY, utils::check_seeds};
 
 pub fn process_initialize_extra_account_meta_list(
     program_id: &Pubkey,
@@ -24,21 +25,26 @@ pub fn process_initialize_extra_account_meta_list(
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
 
+    let _authority = next_account_info(account_info_iter)?;
+
+    let message = next_account_info(account_info_iter)?;
     let extra_account_metas_info = next_account_info(account_info_iter)?;
 
-    let (message_key, _) = Pubkey::find_program_address(
+    check_seeds(
+        message.key,
         &[MESSAGE_SEED, program_id.as_ref()],
         &Pubkey::from_str(MV3_KEY).unwrap(),
-    );
+    )?;
 
     let (expected_validation_address, bump_seed) =
-        get_extra_account_metas_address_and_bump_seed(&message_key, program_id);
+        get_extra_account_metas_address_and_bump_seed(&message.key, program_id);
     if expected_validation_address != *extra_account_metas_info.key {
         return Err(ProgramError::InvalidSeeds);
     }
+    msg!("ARRIVED BEFORE");
 
     let bump_seed = [bump_seed];
-    let signer_seeds = collect_extra_account_metas_signer_seeds(&message_key, &bump_seed);
+    let signer_seeds = collect_extra_account_metas_signer_seeds(&message.key, &bump_seed);
     let length = extra_account_metas.len();
     let account_size = ExtraAccountMetaList::size_of(length)?;
     invoke_signed(
@@ -46,11 +52,18 @@ pub fn process_initialize_extra_account_meta_list(
         &[extra_account_metas_info.clone()],
         &[&signer_seeds],
     )?;
+
+    msg!("INVOKE1");
+
     invoke_signed(
         &system_instruction::assign(extra_account_metas_info.key, program_id),
         &[extra_account_metas_info.clone()],
         &[&signer_seeds],
     )?;
+
+    msg!("INVOKE2");
+
+    msg!("ARRIVED HERE");
 
     let mut data = extra_account_metas_info.try_borrow_mut_data()?;
     ExtraAccountMetaList::init::<ProcessMessageInstruction>(&mut data, extra_account_metas)?;

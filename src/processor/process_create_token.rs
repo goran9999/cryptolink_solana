@@ -2,15 +2,17 @@ use borsh::BorshSerialize;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
+    program::invoke,
+    program_pack::Pack,
     pubkey::Pubkey,
-    rent::Rent,
 };
+use spl_token::state::Mint;
 
 use crate::{
     constants::TOKEN_SEED,
     instructions::CreateToken,
     state::TokenData,
-    utils::{check_account_signer, check_seeds, create_account, transfer_sol},
+    utils::{check_account_signer, check_seeds, create_account},
 };
 
 pub fn process_create_token(
@@ -30,6 +32,8 @@ pub fn process_create_token(
     let system_program = next_account_info(accounts_iter)?;
 
     let token_program = next_account_info(accounts_iter)?;
+
+    let rent = next_account_info(accounts_iter)?;
 
     let bump = check_seeds(
         token_data_info.key,
@@ -53,13 +57,10 @@ pub fn process_create_token(
         total_minted: 0,
         total_supply: data.supply,
         decimals: data.decimals,
+        mint: *mint.key,
     }
     .try_to_vec()
     .unwrap();
-
-    let rent = Rent::default().minimum_balance(token_data.len());
-
-    transfer_sol(mint_authority, token_data_info, system_program, rent)?;
 
     create_account(
         mint_authority,
@@ -67,15 +68,34 @@ pub fn process_create_token(
         system_program,
         token_data.len() as u64,
         program_id,
-        &[TOKEN_SEED, mint_authority.key.as_ref(), &[bump]],
+        Some(&[TOKEN_SEED, mint_authority.key.as_ref(), &[bump]]),
     )?;
 
-    spl_token::instruction::initialize_mint(
+    create_account(
+        mint_authority,
+        mint,
+        system_program,
+        Mint::LEN as u64,
+        token_program.key,
+        None,
+    )?;
+
+    let ix = spl_token::instruction::initialize_mint(
         token_program.key,
         mint.key,
         mint_authority.key,
         Some(mint_authority.key),
         data.decimals,
+    )?;
+
+    invoke(
+        &ix,
+        &[
+            mint_authority.clone(),
+            mint.clone(),
+            token_program.clone(),
+            rent.clone(),
+        ],
     )?;
 
     token_data_info

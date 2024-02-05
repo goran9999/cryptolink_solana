@@ -56,17 +56,20 @@ pub fn create_account<'a, 'b>(
     system_program: &'a AccountInfo<'b>,
     space: u64,
     owner: &Pubkey,
-    seeds: &[&[u8]],
+    seeds: Option<&[&[u8]]>,
 ) -> ProgramResult {
     let rent = Rent::default().minimum_balance(space as usize);
 
     let ix = system_instruction::create_account(from.key, to.key, rent, space, owner);
-
-    invoke_signed(
-        &ix,
-        &[from.clone(), to.clone(), system_program.clone()],
-        &[seeds],
-    )?;
+    if let Some(seeds) = seeds {
+        invoke_signed(
+            &ix,
+            &[from.clone(), to.clone(), system_program.clone()],
+            &[seeds],
+        )?;
+    } else {
+        invoke(&ix, &[from.clone(), to.clone(), system_program.clone()])?;
+    }
 
     Ok(())
 }
