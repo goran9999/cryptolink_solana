@@ -1,9 +1,7 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
-    address_lookup_table::instruction,
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
-    rent::Rent,
     system_program, sysvar,
 };
 

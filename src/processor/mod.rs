@@ -10,12 +10,9 @@ mod process_receive_message;
 mod process_send_message;
 mod process_set_exsig;
 
-use crate::{
-    error::MessengerError,
-    instruction::{
-        AddUserPermission, ChangeConfig, InitializeConfig, ReceiveMessage, SendMessage, SetExsig,
-        V3Instruction,
-    },
+use crate::instruction::{
+    AddUserPermission, ChangeConfig, InitializeConfig, ReceiveMessage, SendMessage, SetExsig,
+    V3Instruction,
 };
 
 pub fn process_instruction(

@@ -2060,6 +2060,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "message_hook"
+version = "0.1.0"
+dependencies = [
+ "solana-program",
+ "spl-discriminator",
+ "spl-pod",
+ "spl-program-error",
+ "spl-tlv-account-resolution",
+ "spl-type-length-value",
+]
+
+[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2119,10 +2131,13 @@ dependencies = [
  "borsh 0.10.3",
  "ethnum",
  "keccak-hash",
+ "message_hook",
  "solana-program",
  "solana-program-test",
  "solana-sdk",
+ "spl-tlv-account-resolution",
  "spl-token",
+ "spl-type-length-value",
  "thiserror",
 ]
 

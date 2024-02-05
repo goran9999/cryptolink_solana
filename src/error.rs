@@ -35,6 +35,8 @@ pub enum MessengerError {
     InvalidSignature,
     #[error("MessageV3: Invalid instruction")]
     InvalidInstruction,
+    #[error("MessageV3: Missing validation account info!")]
+    MissingValidationAccountInfo,
 }
 
 impl From<MessengerError> for ProgramError {

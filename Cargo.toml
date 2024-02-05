@@ -7,10 +7,13 @@ edition = "2021"
 
 [dependencies]
 solana-program="1.17.1"
-spl-token = "4.0.0"
+spl-token = {version="4.0.0",features=["no-entrypoint"]}
 borsh="0.10"
 ethnum = "1.5.0"
 thiserror = "1.0"
+message_hook = {path = "../message_hook/interface"}
+spl-tlv-account-resolution = "0.5.1"
+spl-type-length-value = "0.3.0"
 
 
 

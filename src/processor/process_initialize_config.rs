@@ -6,7 +6,6 @@ use crate::utils::{
     assert_account_signer, check_keys_eq, check_seeds, initialize_account, transfer_sol,
 };
 use borsh::BorshSerialize;
-use solana_program::msg;
 use solana_program::rent::Rent;
 use solana_program::system_program::ID;
 use solana_program::{

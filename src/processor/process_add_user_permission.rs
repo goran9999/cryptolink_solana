@@ -50,9 +50,7 @@ pub fn process_add_user_permission(
         }
     };
 
-    if let Some(mut existing_permisson) =
-        permissions.iter_mut().find(|perm| perm.wallet == data.user)
-    {
+    if let Some(existing_permisson) = permissions.iter_mut().find(|perm| perm.wallet == data.user) {
         existing_permisson.is_active = data.is_active;
     } else {
         permissions.push(UserPermission {

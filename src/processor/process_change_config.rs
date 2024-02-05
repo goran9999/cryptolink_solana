@@ -4,7 +4,6 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     borsh0_10::try_from_slice_unchecked,
     entrypoint::ProgramResult,
-    msg,
     pubkey::Pubkey,
     rent::Rent,
     system_program::ID,
