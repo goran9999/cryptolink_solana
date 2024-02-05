@@ -9,6 +9,10 @@ edition = "2021"
 solana-program = "1.17.1"
 borsh="0.10.0"
 spl-token = {version="4.0.0",features=["no-entrypoint"]}
+mv3_contract_solana={path="../mv3_contract_solana",features=["no-entrypoint"]}
+spl-tlv-account-resolution = "0.5.1"
+message_hook={path="../message_hook/interface"}
 
 [lib]
-crate-type = ["cdylib"]
+name="hello_token"
+crate-type = ["cdylib","lib"]

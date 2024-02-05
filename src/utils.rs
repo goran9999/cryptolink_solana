@@ -1,3 +1,6 @@
+use std::str::FromStr;
+
+use mv3_contract_solana::constants::MESSAGE_SEED;
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
@@ -7,6 +10,8 @@ use solana_program::{
     rent::Rent,
     system_instruction,
 };
+
+use crate::constants::MV3_KEY;
 
 pub fn check_seeds(
     account: &Pubkey,
@@ -64,4 +69,13 @@ pub fn create_account<'a, 'b>(
     )?;
 
     Ok(())
+}
+
+pub fn get_message_pda(program_id: &Pubkey) -> Pubkey {
+    let (message_key, _) = Pubkey::find_program_address(
+        &[MESSAGE_SEED, program_id.as_ref()],
+        &Pubkey::from_str(MV3_KEY).unwrap(),
+    );
+
+    message_key
 }
