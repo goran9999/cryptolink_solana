@@ -9,6 +9,7 @@ use solana_program::{
 };
 
 use crate::{
+    constants::MESSAGE_SEED,
     error::MessengerError,
     state::config::{MessengerConfig, Role},
 };
@@ -144,4 +145,11 @@ pub fn transfer_sol<'a, 'b>(
     }
 
     Ok(())
+}
+
+pub fn get_message_pda(program_id: &Pubkey) -> Pubkey {
+    let (message_key, _) =
+        Pubkey::find_program_address(&[MESSAGE_SEED, program_id.as_ref()], &crate::id());
+
+    message_key
 }

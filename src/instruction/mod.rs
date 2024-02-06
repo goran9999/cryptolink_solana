@@ -6,7 +6,7 @@ use solana_program::{
 };
 
 use crate::{
-    constants::CONFIG_SEED,
+    constants::{CONFIG_SEED, MESSAGE_SEED},
     state::config::{ForeignAddress, Role},
 };
 
@@ -239,6 +239,21 @@ pub fn receive_message(program_id: &Pubkey, data: ReceiveMessage, payer: Pubkey)
 
     accounts.push(AccountMeta {
         pubkey: config,
+        is_signer: false,
+        is_writable: true,
+    });
+
+    let (message, _) =
+        Pubkey::find_program_address(&[MESSAGE_SEED, data.receiver.as_ref()], program_id);
+
+    accounts.push(AccountMeta {
+        pubkey: message,
+        is_signer: false,
+        is_writable: true,
+    });
+
+    accounts.push(AccountMeta {
+        pubkey: system_program::id(),
         is_signer: false,
         is_writable: true,
     });

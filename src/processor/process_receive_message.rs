@@ -12,9 +12,10 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     borsh0_10::try_from_slice_unchecked,
     entrypoint::ProgramResult,
+    msg,
+    // secp256k1_recover::secp256k1_recover,
     // msg,
     pubkey::Pubkey,
-    // secp256k1_recover::secp256k1_recover,
 };
 
 pub fn process_receive_message(
@@ -40,14 +41,22 @@ pub fn process_receive_message(
 
     let sysvar_instructions = next_account_info(accounts_iter)?;
 
-    let bump = check_seeds(message_data, &[MESSAGE_SEED], program_id)?;
+    let bump = check_seeds(
+        message_data,
+        &[MESSAGE_SEED, receive_message.receiver.as_ref()],
+        program_id,
+    )?;
 
     //only operator can sign message processing
     // role_guard(&config, signer, Role::Operator)?;
 
+    msg!("Bridge enabled: {:?}", config.bridge_enabled);
+
     if !config.bridge_enabled {
         return Err(MessengerError::BrigdeNotEnabled.into());
     }
+
+    msg!("Dest chain : {:?}", receive_message.dest_chain_id);
 
     if receive_message.dest_chain_id != SOLANA_CHAIN_ID {
         return Err(MessengerError::ChainNotSupported.into());
@@ -158,11 +167,25 @@ pub fn process_receive_message(
         .borrow_mut()
         .copy_from_slice(&decoded_message.try_to_vec().unwrap());
 
+    let destination = Pubkey::new_from_array(
+        Vec::from(&message_payload[..32])
+            .as_slice()
+            .try_into()
+            .unwrap(),
+    );
+
+    let keys = accounts
+        .into_iter()
+        .map(|k| *k.key)
+        .collect::<Vec<Pubkey>>();
+
+    msg!("KEYS: {:?}", keys);
+
     invoke_execute(
-        &decoded_message.destination,
+        &destination,
         message_data,
         sysvar_instructions,
-        &accounts[5..],
+        accounts_iter.as_slice(),
         Vec::from(&message_payload[32..]),
     )?;
 
