@@ -24,6 +24,7 @@ where
     Fut: Future<Output = AccountDataResult>,
 {
     let validate_state_pubkey = get_extra_account_metas_address(message, program_id);
+
     let validate_state_data = fetch_account_data_fn(validate_state_pubkey)
         .await?
         .ok_or(ProgramError::InvalidAccountData)?;
@@ -48,7 +49,7 @@ where
     // Add only the extra accounts resolved from the validation state
     instruction
         .accounts
-        .extend_from_slice(&execute_instruction.accounts[5..]);
+        .extend_from_slice(&execute_instruction.accounts[3..]);
 
     // Add the program id and validation state account
     instruction
