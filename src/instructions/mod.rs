@@ -1,6 +1,6 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use message_hook::{get_extra_account_metas_address, instruction::MessageHookInstruction};
-use mv3_contract_solana::state::config::ForeignAddress;
+use mv3_contract_solana::{constants::MESSAGE_SEED, state::config::ForeignAddress};
 use solana_program::{
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
@@ -109,9 +109,6 @@ pub fn init_extra_account_meta_list(
 
     let extra_account_meta_key = get_extra_account_metas_address(&message, &program_id);
 
-    let (message_config_pda, _) =
-        Pubkey::find_program_address(&[TOKEN_SEED, authority.as_ref()], &program_id);
-
     Instruction {
         program_id,
         accounts: vec![
@@ -119,11 +116,6 @@ pub fn init_extra_account_meta_list(
                 is_signer: true,
                 is_writable: false,
                 pubkey: authority,
-            },
-            AccountMeta {
-                is_signer: false,
-                is_writable: true,
-                pubkey: get_message_pda(&program_id),
             },
             AccountMeta {
                 is_signer: false,
@@ -137,5 +129,47 @@ pub fn init_extra_account_meta_list(
             },
         ],
         data,
+    }
+}
+
+pub fn update_extra_account_meta_list(
+    program_id: Pubkey,
+    authority: Pubkey,
+    extra_account_metas: Vec<ExtraAccountMeta>,
+) -> Instruction {
+    let data = MessageHookInstruction::UpdateExtraAccountMetaList {
+        extra_account_metas,
+    }
+    .pack();
+
+    let (message_pda, _) = Pubkey::find_program_address(
+        &[MESSAGE_SEED, program_id.as_ref()],
+        &mv3_contract_solana::id(),
+    );
+
+    let extra_account_meta_address = get_extra_account_metas_address(&message_pda, &program_id);
+
+    let accounts: Vec<AccountMeta> = vec![
+        AccountMeta {
+            is_signer: true,
+            is_writable: true,
+            pubkey: authority,
+        },
+        AccountMeta {
+            is_signer: false,
+            is_writable: true,
+            pubkey: extra_account_meta_address,
+        },
+        AccountMeta {
+            is_signer: false,
+            is_writable: true,
+            pubkey: message_pda,
+        },
+    ];
+
+    Instruction {
+        data,
+        program_id: program_id,
+        accounts,
     }
 }

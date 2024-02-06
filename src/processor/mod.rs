@@ -8,6 +8,7 @@ use message_hook::instruction::MessageHookInstruction;
 mod process_create_token;
 mod process_initialize_extra_account_meta_list;
 mod process_process_message;
+mod process_update_extra_meta_list;
 
 pub fn process_instruction(
     program_id: &Pubkey,
@@ -32,9 +33,11 @@ pub fn process_instruction(
             }
             MessageHookInstruction::UpdateExtraAccountMetaList {
                 extra_account_metas,
-            } => {
-                msg!("{:?}", extra_account_metas);
-            }
+            } => process_update_extra_meta_list::process_update_extra_account_meta_list(
+                program_id,
+                accounts,
+                &extra_account_metas,
+            )?,
         }
 
         return Ok(());

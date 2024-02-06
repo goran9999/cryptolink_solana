@@ -1,7 +1,7 @@
 use borsh::BorshDeserialize;
 use solana_program::pubkey::Pubkey;
 
-#[derive(BorshDeserialize, borsh::BorshSerialize)]
+#[derive(BorshDeserialize, borsh::BorshSerialize, Debug)]
 pub struct TokenData {
     pub authority: Pubkey,
     pub total_supply: u64,

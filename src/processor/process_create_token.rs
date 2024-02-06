@@ -41,9 +41,9 @@ pub fn process_create_token(
         program_id,
     )?;
 
-    if !token_data_info.data_is_empty() {
-        return Err(solana_program::program_error::ProgramError::AccountAlreadyInitialized);
-    }
+    // if !token_data_info.data_is_empty() {
+    //     return Err(solana_program::program_error::ProgramError::AccountAlreadyInitialized);
+    // }
 
     if !mint.data_is_empty() {
         return Err(solana_program::program_error::ProgramError::AccountAlreadyInitialized);
@@ -62,14 +62,14 @@ pub fn process_create_token(
     .try_to_vec()
     .unwrap();
 
-    create_account(
-        mint_authority,
-        token_data_info,
-        system_program,
-        token_data.len() as u64,
-        program_id,
-        Some(&[TOKEN_SEED, mint_authority.key.as_ref(), &[bump]]),
-    )?;
+    // create_account(
+    //     mint_authority,
+    //     token_data_info,
+    //     system_program,
+    //     token_data.len() as u64,
+    //     program_id,
+    //     Some(&[TOKEN_SEED, mint_authority.key.as_ref(), &[bump]]),
+    // )?;
 
     create_account(
         mint_authority,
