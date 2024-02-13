@@ -1,3 +1,5 @@
+use crate::state::TokenData;
+use ethnum::{u256, U256};
 use message_hook::{get_extra_account_metas_address, instruction::ProcessMessageInstruction};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -9,16 +11,18 @@ use solana_program::{
 };
 use spl_tlv_account_resolution::state::ExtraAccountMetaList;
 
-use crate::state::TokenData;
-
 pub fn process_process_message(
     program_id: &Pubkey,
     accounts: &Vec<AccountInfo>,
     data: Vec<u8>,
 ) -> ProgramResult {
-    let amount = u64::from_le_bytes(data.clone().try_into().unwrap());
+    let receiver = Pubkey::new_from_array(data[0..32].try_into().unwrap());
 
-    msg!("Mint amount: {:?}", amount);
+    msg!("Receiver: {:?}", receiver);
+
+    let amount = u256::from_be_bytes(data[32..].try_into().unwrap());
+
+    msg!("Amount: {:?}", amount);
 
     let accounts_iter = &mut accounts.iter();
 

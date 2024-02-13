@@ -12,7 +12,7 @@ spl-token = {version="4.0.0",features=["no-entrypoint"]}
 mv3_contract_solana={path="../mv3_contract_solana",features=["no-entrypoint"]}
 spl-tlv-account-resolution = "0.5.1"
 message_hook={path="../message_hook/interface"}
-
+ethnum = "1.5.0"
 [lib]
 name="hello_token"
 crate-type = ["cdylib","lib"]

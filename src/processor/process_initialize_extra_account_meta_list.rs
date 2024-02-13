@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use message_hook::{
     collect_extra_account_metas_signer_seeds, get_extra_account_metas_address_and_bump_seed,
     instruction::ProcessMessageInstruction,
@@ -16,11 +14,6 @@ use solana_program::{
 };
 use spl_tlv_account_resolution::{account::ExtraAccountMeta, state::ExtraAccountMetaList};
 
-use crate::{
-    constants::{MV3_KEY, TOKEN_SEED},
-    utils::check_seeds,
-};
-
 pub fn process_initialize_extra_account_meta_list(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -30,7 +23,7 @@ pub fn process_initialize_extra_account_meta_list(
 
     msg!("EXTRA ACC METAS: {:?}", extra_account_metas);
 
-    let _authority = next_account_info(account_info_iter)?;
+    let _authority: &AccountInfo<'_> = next_account_info(account_info_iter)?;
 
     let extra_account_metas_info = next_account_info(account_info_iter)?;
 
