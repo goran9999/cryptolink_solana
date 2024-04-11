@@ -10,7 +10,6 @@ use solana_program::{
     pubkey::Pubkey,
     rent::Rent,
     system_instruction,
-    // sysvar::instructions::load_current_index_checked,
     sysvar::Sysvar,
 };
 
@@ -40,6 +39,8 @@ pub fn process_send_message(
             solana_program::program_error::ProgramError::MissingRequiredSignature,
         );
     }
+
+    let slot = Clock::get().unwrap().slot;
 
     let (address, bump) = get_config_pda();
 
@@ -97,6 +98,7 @@ pub fn process_send_message(
         received_at: Clock::get().unwrap().unix_timestamp,
         destination: data.destination,
         payload: data.payload,
+        slot,
     };
 
     let serialized_data = message_account.try_to_vec().unwrap();

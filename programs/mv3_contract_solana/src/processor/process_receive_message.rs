@@ -59,7 +59,7 @@ pub fn process_receive_message(
 
     msg!("Dest chain : {:?}", receive_message.dest_chain_id);
 
-    if receive_message.dest_chain_id != SOLANA_CHAIN_ID {
+    if u64::from(receive_message.dest_chain_id) != SOLANA_CHAIN_ID {
         return Err(MessengerError::ChainNotSupported.into());
     }
 

@@ -11,6 +11,7 @@ pub struct Message {
     pub destination: ForeignAddress,
     pub payload: Vec<u8>,
     pub tx_id: u128,
+    pub slot: u64,
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
