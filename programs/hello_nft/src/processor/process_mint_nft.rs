@@ -10,7 +10,6 @@ use solana_program::{
     msg,
     program_error::ProgramError,
     pubkey::Pubkey,
-    rent::Rent,
 };
 
 use crate::{
@@ -66,7 +65,7 @@ pub fn process_mint_nft(
         return ProgramResult::Err(ProgramError::InvalidSeeds);
     }
 
-    let (receiver_proof, bump) = check_proof_pda(&destination_wallet, program_id.clone());
+    let (receiver_proof, _) = check_proof_pda(&destination_wallet, program_id.clone());
 
     if *collection.key != decoded_data.collection_key {
         return ProgramResult::Err(ProgramError::InvalidAccountData);

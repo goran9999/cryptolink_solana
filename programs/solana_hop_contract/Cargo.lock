@@ -2125,7 +2125,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mv3_contract_sender"
+name = "mv3_sender_solana"
 version = "0.1.0"
 dependencies = [
  "borsh 0.10.3",
@@ -4467,7 +4467,7 @@ dependencies = [
  "ethnum",
  "keccak-hash",
  "message_hook",
- "mv3_contract_sender",
+ "mv3_sender_solana",
  "mv3_contract_solana",
  "solana-program",
  "solana-program-test",

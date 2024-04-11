@@ -1,20 +1,22 @@
-use borsh::BorshSerialize;
-// use borsh::BorshSerialize;
 use crate::{
     constants::{CONFIG_SEED, MESSAGE_SEED, SOLANA_CHAIN_ID},
     error::MessengerError,
     instruction::ReceiveMessage,
-    state::{config::MessengerConfig, message::MessagePayload},
-    utils::{assert_account_signer, check_seeds, initialize_account},
+    state::{
+        config::{MessengerConfig, Role},
+        message::MessagePayload,
+    },
+    utils::{
+        assert_account_signer, check_seeds, initialize_account, public_key_to_address, role_guard,
+    },
 };
+use borsh::BorshSerialize;
 use message_hook::{get_extra_account_metas_address, onchain::invoke_execute};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     borsh0_10::try_from_slice_unchecked,
     entrypoint::ProgramResult,
     msg,
-    // secp256k1_recover::secp256k1_recover,
-    // msg,
     pubkey::Pubkey,
 };
 
@@ -47,8 +49,7 @@ pub fn process_receive_message(
         program_id,
     )?;
 
-    //only operator can sign message processing
-    // role_guard(&config, signer, Role::Operator)?;
+    role_guard(&config, signer, Role::Operator)?;
 
     msg!("Bridge enabled: {:?}", config.bridge_enabled);
 
@@ -62,77 +63,69 @@ pub fn process_receive_message(
         return Err(MessengerError::ChainNotSupported.into());
     }
 
-    let data_index = 0;
+    let mut data_index = 0;
 
-    // let src_chain_exists = config
-    //     .enabled_chains
-    //     .into_iter()
-    //     .any(|c| c == receive_message.source_chain_id);
+    let src_chain_exists = config
+        .enabled_chains
+        .into_iter()
+        .any(|c| c == receive_message.source_chain_id);
 
-    // if !src_chain_exists {
-    //     return Err(MessengerError::ChainNotSupported.into());
-    // }
+    if !src_chain_exists {
+        return Err(MessengerError::ChainNotSupported.into());
+    }
 
-    //TODO:find best way to store processed txs
+    if let Some(exsig) = config
+        .exsig
+        .iter()
+        .find(|exsig| exsig.recipient == receive_message.receiver)
+    {
+        let exsig_vrs_bytes = receive_message
+            .data
+            .get(data_index)
+            .expect("Missing Exsig vrs bytes!");
 
-    // if let Some(exsig) = config
-    //     .exsig
-    //     .iter()
-    //     .find(|exsig| exsig.recipient == receive_message.receiver)
-    // {
-    //     let exsig_vrs_bytes = receive_message
-    //         .data
-    //         .get(data_index)
-    //         .expect("Missing Exsig vrs bytes!");
+        if exsig_vrs_bytes.len() != 65 {
+            return Err(MessengerError::InvalidSignature.into());
+        }
 
-    //     msg!("EXSIG EXISTS!");
+        let recovered_signer = solana_program::secp256k1_recover::secp256k1_recover(
+            &exsig_vrs_bytes[65..],
+            exsig_vrs_bytes[0],
+            &exsig_vrs_bytes[1..65],
+        )
+        .expect("Failed to recover secp256k1 sig");
 
-    //     if exsig_vrs_bytes.len() != 65 {
-    //         return Err(MessengerError::InvalidSignature.into());
-    //     }
+        let signer = recovered_signer.0.try_to_vec().unwrap();
 
-    //     let recovered_signer = secp256k1_recover(
-    //         &exsig_vrs_bytes[65..],
-    //         exsig_vrs_bytes[0],
-    //         &exsig_vrs_bytes[1..65],
-    //     )
-    //     .expect("Failed to recover secp256k1 sig");
+        if signer.as_slice() != exsig.sig {
+            return Err(MessengerError::InvalidSignature.into());
+        }
+        data_index = data_index + 1;
+    }
 
-    //     let signer = recovered_signer.0.try_to_vec().unwrap();
+    if let Some(chainsig) = config.chainsig {
+        let chainsig_vrs_bytes = receive_message
+            .data
+            .get(data_index)
+            .expect("Missing Chainsig vrs bytes!");
 
-    //     if signer.as_slice() != exsig.sig {
-    //         return Err(MessengerError::InvalidSignature.into());
-    //     }
-    // data_index = data_index + 1;
-    // }
+        let recovered_chainsig = solana_program::secp256k1_recover::secp256k1_recover(
+            &chainsig_vrs_bytes[65..],
+            chainsig_vrs_bytes[64] - 27,
+            &chainsig_vrs_bytes[..64],
+        )
+        .expect("Failed to recover secp256k1 sig");
 
-    // if let Some(chainsig) = config.chainsig {
-    // let chainsig_vrs_bytes = receive_message
-    //     .data
-    //     .get(data_index)
-    //     .expect("Missing Chainsig vrs bytes!");
+        let chainsig_address = recovered_chainsig.0;
 
-    // let recovered_chainsig = secp256k1_recover(
-    //     &chainsig_vrs_bytes[65..],
-    //     chainsig_vrs_bytes[64] - 27,
-    //     &chainsig_vrs_bytes[..64],
-    // )
-    // .expect("Failed to recover secp256k1 sig");
+        let address = public_key_to_address(&chainsig_address);
 
-    // let chainsig_address = recovered_chainsig.0;
+        data_index = data_index + 1;
 
-    // msg!("CHAINSIG: {:?}", chainsig_address);
-
-    // let address = public_key_to_address(&chainsig_address);
-
-    // msg!("ADDRESS: {:?}", address);
-
-    // data_index = data_index + 1;
-
-    // if chainsig_address[12..] != chainsig[12..] {
-    //     return Err(MessengerError::InvalidSignature.into());
-    // }
-    // }
+        if address != chainsig[12..] {
+            return Err(MessengerError::InvalidSignature.into());
+        }
+    }
 
     let message_payload = receive_message.data.get(data_index).unwrap();
 

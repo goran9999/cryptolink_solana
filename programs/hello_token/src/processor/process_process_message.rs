@@ -1,5 +1,5 @@
 use crate::state::TokenData;
-use ethnum::{u256, U256};
+use ethnum::u256;
 use message_hook::{get_extra_account_metas_address, instruction::ProcessMessageInstruction};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},

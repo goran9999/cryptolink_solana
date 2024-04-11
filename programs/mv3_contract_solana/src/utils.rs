@@ -1,3 +1,4 @@
+use sha3::{Digest, Keccak256};
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
@@ -152,4 +153,18 @@ pub fn get_message_pda(program_id: &Pubkey) -> Pubkey {
         Pubkey::find_program_address(&[MESSAGE_SEED, program_id.as_ref()], &crate::id());
 
     message_key
+}
+
+pub fn public_key_to_address(pub_key: &[u8]) -> [u8; 20] {
+    let mut hasher = Keccak256::new();
+
+    if pub_key[0] == 4 {
+        hasher.update(&pub_key[1..]);
+    } else {
+        hasher.update(pub_key);
+    }
+
+    let result = hasher.finalize();
+
+    result[12..32].try_into().unwrap()
 }
