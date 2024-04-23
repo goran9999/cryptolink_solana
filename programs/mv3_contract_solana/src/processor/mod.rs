@@ -5,14 +5,19 @@ use solana_program::{
 
 mod process_add_user_permission;
 mod process_change_config;
+mod process_configure_client;
+mod process_deposit_withdraw;
 mod process_initialize_config;
 mod process_receive_message;
 mod process_send_message;
 mod process_set_exsig;
 
-use crate::instruction::{
-    AddUserPermission, ChangeConfig, InitializeConfig, ReceiveMessage, SendMessage, SetExsig,
-    V3Instruction,
+use crate::{
+    instruction::{
+        AddUserPermission, ChangeConfig, InitializeConfig, ReceiveMessage, SendMessage, SetExsig,
+        V3Instruction,
+    },
+    state::config::MessageClient,
 };
 
 pub fn process_instruction(
@@ -86,6 +91,27 @@ pub fn process_instruction(
         V3Instruction::SetExsig { exsig } => {
             process_set_exsig::process_set_exsig(program_id, accounts, SetExsig { exsig })?
         }
+        V3Instruction::ConfigureClient {
+            authority,
+            destination_contract,
+            notify_on_failure,
+            supported_chains,
+            allowed_contracts,
+            exsig,
+        } => {
+            process_configure_client::process_configure_client(
+                program_id,
+                accounts,
+                MessageClient {
+                    allowed_contracts,
+                    authority,
+                    destination_contract,
+                    exsig,
+                    notify_on_failure,
+                    supported_chains,
+                },
+            )?;
+        }
         V3Instruction::ReceiveMessage {
             tx_id,
             dest_chain_id,
@@ -108,6 +134,11 @@ pub fn process_instruction(
                 program_id,
                 accounts,
             )?
+        }
+        V3Instruction::DepositWithdraw { action, amount } => {
+            process_deposit_withdraw::process_deposit_withdraw(
+                program_id, accounts, amount, action,
+            )?;
         }
     }
 

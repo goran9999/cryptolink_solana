@@ -6,8 +6,9 @@ use solana_program::{
 };
 
 use crate::{
-    constants::{CONFIG_SEED, MESSAGE_SEED},
-    state::config::{ForeignAddress, Role},
+    constants::{CONFIG_SEED, MESSAGE_CLIENT_SEED, MESSAGE_CLIENT_TREASURY_SEED, MESSAGE_SEED},
+    state::config::{ForeignAddress, MessageClient, Role},
+    utils::get_message_client_pda,
 };
 
 #[derive(BorshDeserialize, BorshSerialize, PartialEq, PartialOrd, Clone)]
@@ -37,24 +38,35 @@ pub enum V3Instruction {
     SetExsig {
         exsig: ForeignAddress,
     },
-
+    ConfigureClient {
+        authority: Pubkey,
+        destination_contract: Pubkey,
+        notify_on_failure: bool,
+        supported_chains: Vec<u64>,
+        allowed_contracts: Vec<ForeignAddress>,
+        exsig: Option<ForeignAddress>,
+    },
     ReceiveMessage {
         tx_id: u128,
-        dest_chain_id: u32,
+        dest_chain_id: u64,
         receiver: Pubkey,
         data: Vec<Vec<u8>>,
-        source_chain_id: u32,
+        source_chain_id: u64,
         sender: ForeignAddress,
+    },
+    DepositWithdraw {
+        action: DepositWithdraw,
+        amount: u64,
     },
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct ReceiveMessage {
     pub tx_id: u128,
-    pub dest_chain_id: u32,
+    pub dest_chain_id: u64,
     pub receiver: Pubkey,
     pub data: Vec<Vec<u8>>,
-    pub source_chain_id: u32,
+    pub source_chain_id: u64,
     pub sender: ForeignAddress,
 }
 
@@ -237,10 +249,18 @@ pub fn receive_message(program_id: &Pubkey, data: ReceiveMessage, payer: Pubkey)
 
     let (config, _) = Pubkey::find_program_address(&[CONFIG_SEED], &program_id);
 
+    let (client, _) = get_message_client_pda(data.receiver);
+
     accounts.push(AccountMeta {
         pubkey: config,
         is_signer: false,
         is_writable: true,
+    });
+
+    accounts.push(AccountMeta {
+        pubkey: client,
+        is_signer: false,
+        is_writable: false,
     });
 
     let (message, _) =
@@ -283,5 +303,108 @@ pub fn receive_message(program_id: &Pubkey, data: ReceiveMessage, payer: Pubkey)
         program_id: program_id.clone(),
         accounts,
         data: ix_data,
+    }
+}
+
+pub fn configure_client(payer: Pubkey, data: MessageClient) -> Instruction {
+    let (addr, _) = get_message_client_pda(data.destination_contract);
+
+    let accounts: Vec<AccountMeta> = vec![
+        AccountMeta {
+            is_signer: true,
+            is_writable: true,
+            pubkey: payer,
+        },
+        AccountMeta {
+            is_signer: false,
+            is_writable: true,
+            pubkey: addr,
+        },
+        AccountMeta {
+            is_signer: false,
+            is_writable: false,
+            pubkey: addr,
+        },
+    ];
+
+    let data = V3Instruction::ConfigureClient {
+        authority: data.authority,
+        destination_contract: data.destination_contract,
+        notify_on_failure: data.notify_on_failure,
+        supported_chains: data.supported_chains,
+        allowed_contracts: data.allowed_contracts,
+        exsig: data.exsig,
+    }
+    .try_to_vec()
+    .unwrap();
+
+    let ix = Instruction {
+        accounts,
+        data,
+        program_id: crate::id(),
+    };
+
+    ix
+}
+
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct MessageDigest {
+    pub data: Vec<u8>,
+    pub tx_id: u128,
+    pub sender: ForeignAddress,
+    pub recipient: Pubkey,
+    pub dest_chain_id: u64,
+    pub source_chain_id: u64,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, PartialEq, PartialOrd, Clone)]
+pub enum DepositWithdraw {
+    Deposit,
+    Withdraw,
+}
+
+pub fn deposit_withdraw_sol(
+    payer: Pubkey,
+    destination_contract: Pubkey,
+    amount: u64,
+    action: DepositWithdraw,
+) -> Instruction {
+    let (address, _) = get_message_client_pda(destination_contract);
+
+    let (treasury, _) = Pubkey::find_program_address(
+        &[
+            MESSAGE_CLIENT_SEED,
+            destination_contract.as_ref(),
+            MESSAGE_CLIENT_TREASURY_SEED,
+        ],
+        &crate::id(),
+    );
+
+    let accounts: Vec<AccountMeta> = vec![
+        AccountMeta {
+            is_signer: true,
+            is_writable: true,
+            pubkey: payer,
+        },
+        AccountMeta {
+            is_signer: false,
+            is_writable: false,
+            pubkey: address,
+        },
+        AccountMeta {
+            is_signer: false,
+            is_writable: true,
+            pubkey: treasury,
+        },
+    ];
+
+    let data = V3Instruction::DepositWithdraw { action, amount }
+        .try_to_vec()
+        .unwrap();
+
+    Instruction {
+        program_id: crate::id(),
+        accounts,
+        data,
     }
 }

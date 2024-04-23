@@ -12,8 +12,12 @@ borsh="0.10"
 ethnum = "1.5.0"
 thiserror = "1.0"
 sha3 = "0.10.8"
+keccak = "0.1.5"
 secp256k1 = "0.29.0"
+solana-bpf-loader-program = "1.17.1"
+tiny-keccak = {version="2.0.2",features=["keccak"]}
 message_hook = {path = "../../interface"}
+mv3_sender_solana={path="../mv3_sender_solana"}
 spl-tlv-account-resolution = "0.5.1"
 spl-type-length-value = "0.3.0"
 
