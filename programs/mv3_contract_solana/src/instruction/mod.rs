@@ -8,7 +8,7 @@ use solana_program::{
 use crate::{
     constants::{CONFIG_SEED, MESSAGE_CLIENT_SEED, MESSAGE_CLIENT_TREASURY_SEED, MESSAGE_SEED},
     state::config::{ForeignAddress, MessageClient, Role},
-    utils::get_message_client_pda,
+    utils::{get_client_treasury_pda, get_global_treasury_pda, get_message_client_pda},
 };
 
 #[derive(BorshDeserialize, BorshSerialize, PartialEq, PartialOrd, Clone)]
@@ -263,11 +263,26 @@ pub fn receive_message(program_id: &Pubkey, data: ReceiveMessage, payer: Pubkey)
         is_writable: false,
     });
 
+    let client_treasury = get_client_treasury_pda(data.receiver);
+    let global_treasury = get_global_treasury_pda();
+
     let (message, _) =
         Pubkey::find_program_address(&[MESSAGE_SEED, data.receiver.as_ref()], program_id);
 
     accounts.push(AccountMeta {
         pubkey: message,
+        is_signer: false,
+        is_writable: true,
+    });
+
+    accounts.push(AccountMeta {
+        pubkey: client_treasury,
+        is_signer: false,
+        is_writable: true,
+    });
+
+    accounts.push(AccountMeta {
+        pubkey: global_treasury,
         is_signer: false,
         is_writable: true,
     });
@@ -323,7 +338,12 @@ pub fn configure_client(payer: Pubkey, data: MessageClient) -> Instruction {
         AccountMeta {
             is_signer: false,
             is_writable: false,
-            pubkey: addr,
+            pubkey: data.destination_contract,
+        },
+        AccountMeta {
+            is_signer: false,
+            is_writable: false,
+            pubkey: system_program::id(),
         },
     ];
 
@@ -395,6 +415,11 @@ pub fn deposit_withdraw_sol(
             is_signer: false,
             is_writable: true,
             pubkey: treasury,
+        },
+        AccountMeta {
+            is_signer: false,
+            is_writable: false,
+            pubkey: system_program::id(),
         },
     ];
 

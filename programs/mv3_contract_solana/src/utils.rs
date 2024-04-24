@@ -156,6 +156,24 @@ pub fn check_client_treasury_seeds(
     Ok(bump)
 }
 
+pub fn get_client_treasury_pda(destination_contract: Pubkey) -> Pubkey {
+    let (pda, _) = Pubkey::find_program_address(
+        &[
+            MESSAGE_CLIENT_SEED,
+            destination_contract.as_ref(),
+            MESSAGE_CLIENT_TREASURY_SEED,
+        ],
+        &crate::id(),
+    );
+
+    pda
+}
+
+pub fn get_global_treasury_pda() -> Pubkey {
+    let (pda, _) = Pubkey::find_program_address(&[MESSAGE_SEED, GLOBAL_TREASURY], &crate::id());
+    pda
+}
+
 pub fn check_global_treasury_seeds(address: Pubkey) -> Result<u8, ProgramError> {
     let (pda, bump) = Pubkey::find_program_address(&[MESSAGE_SEED, GLOBAL_TREASURY], &crate::id());
 

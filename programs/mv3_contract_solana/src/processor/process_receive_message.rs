@@ -59,6 +59,8 @@ pub fn process_receive_message(
 
     let client_treasury = next_account_info(accounts_iter)?;
 
+    msg!("Dest contract {}", decoded_client.destination_contract);
+
     let treasury_bump =
         check_client_treasury_seeds(decoded_client.destination_contract, *client_treasury.key)?;
 
