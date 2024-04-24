@@ -1,21 +1,31 @@
-use borsh::BorshSerialize;
-// use borsh::BorshSerialize;
 use crate::{
-    constants::{CONFIG_SEED, MESSAGE_SEED, SOLANA_CHAIN_ID},
+    constants::{
+        CONFIG_SEED, MESSAGE_CLIENT_SEED, MESSAGE_CLIENT_TREASURY_SEED, MESSAGE_SEED,
+        SOLANA_CHAIN_ID, TX_FEE,
+    },
     error::MessengerError,
-    instruction::ReceiveMessage,
-    state::{config::MessengerConfig, message::MessagePayload},
-    utils::{assert_account_signer, check_seeds, initialize_account},
+    instruction::{MessageDigest, ReceiveMessage},
+    state::{
+        config::{MessageClient, MessengerConfig},
+        message::MessagePayload,
+    },
+    utils::{
+        assert_account_signer, check_client_seeds, check_client_treasury_seeds,
+        check_global_treasury_seeds, check_seeds, create_ecdsa_sig, initialize_account,
+        pubkey_to_address, public_key_to_address,
+    },
 };
+
+use borsh::BorshSerialize;
 use message_hook::{get_extra_account_metas_address, onchain::invoke_execute};
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     borsh0_10::try_from_slice_unchecked,
     entrypoint::ProgramResult,
     msg,
-    // secp256k1_recover::secp256k1_recover,
-    // msg,
+    program::{invoke, invoke_signed},
     pubkey::Pubkey,
+    system_instruction,
 };
 
 pub fn process_receive_message(
@@ -33,13 +43,50 @@ pub fn process_receive_message(
 
     check_seeds(raw_config, &[CONFIG_SEED], program_id)?;
 
+    let message_client = next_account_info(accounts_iter)?;
+
+    check_client_seeds(receive_message.receiver, *message_client.key)?;
+
+    let decoded_client = try_from_slice_unchecked::<MessageClient>(&message_client.data.borrow())?;
+
+    if decoded_client.destination_contract != receive_message.receiver {
+        return Err(MessengerError::InvalidClientProgramId.into());
+    }
+
     let config: MessengerConfig = try_from_slice_unchecked(&raw_config.data.borrow())?;
 
     let message_data = next_account_info(accounts_iter)?;
 
+    let client_treasury = next_account_info(accounts_iter)?;
+
+    let treasury_bump =
+        check_client_treasury_seeds(decoded_client.destination_contract, *client_treasury.key)?;
+
+    let global_treasury = next_account_info(accounts_iter)?;
+
+    check_global_treasury_seeds(*global_treasury.key)?;
+
     let system_program = next_account_info(accounts_iter)?;
 
     let sysvar_instructions = next_account_info(accounts_iter)?;
+
+    let transfer_ix =
+        system_instruction::transfer(client_treasury.key, global_treasury.key, TX_FEE);
+
+    invoke_signed(
+        &transfer_ix,
+        &[
+            client_treasury.to_owned(),
+            global_treasury.to_owned(),
+            system_program.to_owned(),
+        ],
+        &[&[
+            MESSAGE_CLIENT_SEED,
+            decoded_client.destination_contract.as_ref(),
+            MESSAGE_CLIENT_TREASURY_SEED,
+            &[treasury_bump],
+        ]],
+    )?;
 
     let bump = check_seeds(
         message_data,
@@ -47,7 +94,19 @@ pub fn process_receive_message(
         program_id,
     )?;
 
-    //only operator can sign message processing
+    let data_position = if config.chainsig.is_some() { 1 } else { 0 };
+
+    let message_payload = MessageDigest {
+        data: receive_message.data.get(data_position).unwrap().clone(),
+        dest_chain_id: receive_message.dest_chain_id,
+        recipient: receive_message.receiver,
+        sender: receive_message.sender,
+        source_chain_id: receive_message.source_chain_id,
+        tx_id: receive_message.tx_id,
+    }
+    .try_to_vec()
+    .unwrap();
+
     // role_guard(&config, signer, Role::Operator)?;
 
     msg!("Bridge enabled: {:?}", config.bridge_enabled);
@@ -58,81 +117,73 @@ pub fn process_receive_message(
 
     msg!("Dest chain : {:?}", receive_message.dest_chain_id);
 
-    if receive_message.dest_chain_id != SOLANA_CHAIN_ID {
+    if u64::from(receive_message.dest_chain_id) != SOLANA_CHAIN_ID {
         return Err(MessengerError::ChainNotSupported.into());
     }
 
-    let data_index = 0;
+    let mut data_index = 0;
 
-    // let src_chain_exists = config
-    //     .enabled_chains
-    //     .into_iter()
-    //     .any(|c| c == receive_message.source_chain_id);
+    let src_chain_exists = config
+        .enabled_chains
+        .into_iter()
+        .any(|c| u64::from(c) == receive_message.source_chain_id);
 
-    // if !src_chain_exists {
-    //     return Err(MessengerError::ChainNotSupported.into());
-    // }
+    if !src_chain_exists {
+        return Err(MessengerError::ChainNotSupported.into());
+    }
 
-    //TODO:find best way to store processed txs
+    if let Some(exsig) = decoded_client.exsig {
+        let exsig_vrs_bytes = receive_message
+            .data
+            .get(data_index)
+            .expect("Missing Exsig vrs bytes!");
 
-    // if let Some(exsig) = config
-    //     .exsig
-    //     .iter()
-    //     .find(|exsig| exsig.recipient == receive_message.receiver)
-    // {
-    //     let exsig_vrs_bytes = receive_message
-    //         .data
-    //         .get(data_index)
-    //         .expect("Missing Exsig vrs bytes!");
+        if exsig_vrs_bytes.len() != 72 {
+            return Err(MessengerError::InvalidSignature.into());
+        }
 
-    //     msg!("EXSIG EXISTS!");
+        let recovered_signer = solana_program::secp256k1_recover::secp256k1_recover(
+            &exsig_vrs_bytes[65..],
+            exsig_vrs_bytes[0],
+            &exsig_vrs_bytes[1..65],
+        )
+        .expect("Failed to recover secp256k1 sig");
 
-    //     if exsig_vrs_bytes.len() != 65 {
-    //         return Err(MessengerError::InvalidSignature.into());
-    //     }
+        let signer = recovered_signer.0.try_to_vec().unwrap();
 
-    //     let recovered_signer = secp256k1_recover(
-    //         &exsig_vrs_bytes[65..],
-    //         exsig_vrs_bytes[0],
-    //         &exsig_vrs_bytes[1..65],
-    //     )
-    //     .expect("Failed to recover secp256k1 sig");
+        if signer.as_slice() != exsig {
+            return Err(MessengerError::InvalidSignature.into());
+        }
+        data_index = data_index + 1;
+    }
 
-    //     let signer = recovered_signer.0.try_to_vec().unwrap();
+    if let Some(chainsig) = config.chainsig {
+        let chainsig_vrs_bytes = receive_message
+            .data
+            .get(data_index)
+            .expect("Missing Chainsig vrs bytes!");
 
-    //     if signer.as_slice() != exsig.sig {
-    //         return Err(MessengerError::InvalidSignature.into());
-    //     }
-    // data_index = data_index + 1;
-    // }
+        let recovery_id = u64::from_le_bytes(chainsig_vrs_bytes[..8].try_into().unwrap()) - 27;
 
-    // if let Some(chainsig) = config.chainsig {
-    // let chainsig_vrs_bytes = receive_message
-    //     .data
-    //     .get(data_index)
-    //     .expect("Missing Chainsig vrs bytes!");
+        let hashed = create_ecdsa_sig(&message_payload);
 
-    // let recovered_chainsig = secp256k1_recover(
-    //     &chainsig_vrs_bytes[65..],
-    //     chainsig_vrs_bytes[64] - 27,
-    //     &chainsig_vrs_bytes[..64],
-    // )
-    // .expect("Failed to recover secp256k1 sig");
+        let recovered_chainsig = solana_program::secp256k1_recover::secp256k1_recover(
+            &hashed,
+            recovery_id as u8,
+            &chainsig_vrs_bytes[8..72],
+        )
+        .expect("Failed to recover secp256k1 sig");
 
-    // let chainsig_address = recovered_chainsig.0;
+        let chainsig_address = recovered_chainsig.0;
 
-    // msg!("CHAINSIG: {:?}", chainsig_address);
+        let address = public_key_to_address(&chainsig_address);
 
-    // let address = public_key_to_address(&chainsig_address);
+        data_index = data_index + 1;
 
-    // msg!("ADDRESS: {:?}", address);
-
-    // data_index = data_index + 1;
-
-    // if chainsig_address[12..] != chainsig[12..] {
-    //     return Err(MessengerError::InvalidSignature.into());
-    // }
-    // }
+        if pubkey_to_address(&chainsig[12..]) != pubkey_to_address(&address) {
+            return Err(MessengerError::InvalidSignature.into());
+        }
+    }
 
     let message_payload = receive_message.data.get(data_index).unwrap();
 
@@ -174,20 +225,32 @@ pub fn process_receive_message(
             .unwrap(),
     );
 
-    let keys = accounts
-        .into_iter()
-        .map(|k| *k.key)
-        .collect::<Vec<Pubkey>>();
-
-    msg!("KEYS: {:?}", keys);
-
-    invoke_execute(
+    match invoke_execute(
         &destination,
         message_data,
         sysvar_instructions,
         accounts_iter.as_slice(),
         Vec::from(&message_payload[32..]),
-    )?;
+    ) {
+        Ok(_) => {
+            msg!("Successfully bridged data!");
+        }
+        Err(e) => {
+            msg!("Invoking returned err {}", e.to_string());
+            if decoded_client.notify_on_failure {
+                let ix = mv3_solana_sender::instructions::send_message(
+                    mv3_solana_sender::id(),
+                    signer.key,
+                    &receive_message.receiver,
+                    receive_message.source_chain_id,
+                    receive_message.sender,
+                    receive_message.data.get(data_index).unwrap().clone(),
+                );
+
+                invoke(&ix, &[])?;
+            }
+        }
+    }
 
     Ok(())
 }

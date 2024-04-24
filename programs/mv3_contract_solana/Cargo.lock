@@ -2125,16 +2125,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "mv3_contract_sender"
+version = "0.1.0"
+dependencies = [
+ "borsh 0.10.3",
+ "ethnum",
+ "message_hook",
+ "solana-program",
+ "spl-tlv-account-resolution",
+ "spl-token",
+ "spl-type-length-value",
+ "thiserror",
+]
+
+[[package]]
 name = "mv3_contract_solana"
 version = "0.1.0"
 dependencies = [
  "borsh 0.10.3",
  "ethnum",
- "keccak-hash",
  "message_hook",
  "solana-program",
- "solana-program-test",
- "solana-sdk",
  "spl-tlv-account-resolution",
  "spl-token",
  "spl-type-length-value",
@@ -4446,6 +4457,25 @@ dependencies = [
  "subtle",
  "thiserror",
  "zeroize",
+]
+
+[[package]]
+name = "solana_hop_contract"
+version = "0.1.0"
+dependencies = [
+ "borsh 0.10.3",
+ "ethnum",
+ "keccak-hash",
+ "message_hook",
+ "mv3_contract_sender",
+ "mv3_contract_solana",
+ "solana-program",
+ "solana-program-test",
+ "solana-sdk",
+ "spl-tlv-account-resolution",
+ "spl-token",
+ "spl-type-length-value",
+ "thiserror",
 ]
 
 [[package]]

@@ -35,15 +35,11 @@ pub fn process_create_token(
 
     let rent = next_account_info(accounts_iter)?;
 
-    let bump = check_seeds(
+    check_seeds(
         token_data_info.key,
         &[TOKEN_SEED, mint_authority.key.as_ref()],
         program_id,
     )?;
-
-    // if !token_data_info.data_is_empty() {
-    //     return Err(solana_program::program_error::ProgramError::AccountAlreadyInitialized);
-    // }
 
     if !mint.data_is_empty() {
         return Err(solana_program::program_error::ProgramError::AccountAlreadyInitialized);

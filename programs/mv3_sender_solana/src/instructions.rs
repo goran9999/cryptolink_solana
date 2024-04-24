@@ -24,6 +24,7 @@ pub fn get_message_pda(sender: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
 }
 
 pub const MESSENGER_SEED: &[u8] = b"messenger";
+pub const CONFIG_SEED: &[u8] = b"config";
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct MessagePayload {
@@ -42,7 +43,14 @@ pub fn send_message(
 ) -> Instruction {
     let (pda, _) = get_message_pda(sender_program_id, &program_id);
 
+    let (config_pda, _) = get_config_pda();
+
     let accounts: Vec<AccountMeta> = vec![
+        AccountMeta {
+            is_signer: false,
+            is_writable: true,
+            pubkey: config_pda,
+        },
         AccountMeta {
             is_signer: false,
             is_writable: true,
@@ -83,4 +91,10 @@ pub fn send_message(
         accounts,
         data,
     }
+}
+
+pub fn get_config_pda() -> (Pubkey, u8) {
+    let pda = Pubkey::find_program_address(&[CONFIG_SEED], &crate::id());
+
+    pda
 }

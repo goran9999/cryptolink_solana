@@ -1,3 +1,4 @@
+use sha3::{Digest, Keccak256};
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,
@@ -7,9 +8,12 @@ use solana_program::{
     rent::Rent,
     system_instruction::{self, create_account},
 };
+use tiny_keccak::{Hasher, Keccak};
 
 use crate::{
-    constants::MESSAGE_SEED,
+    constants::{
+        GLOBAL_TREASURY, MESSAGE_CLIENT_SEED, MESSAGE_CLIENT_TREASURY_SEED, MESSAGE_SEED, PREFIX,
+    },
     error::MessengerError,
     state::config::{MessengerConfig, Role},
 };
@@ -119,6 +123,49 @@ pub fn check_seeds(
     Ok(bump)
 }
 
+pub fn check_client_seeds(
+    destination_contract: Pubkey,
+    address: Pubkey,
+) -> Result<u8, ProgramError> {
+    let (pda, bump) = get_message_client_pda(destination_contract);
+
+    if address != pda {
+        return Err(ProgramError::InvalidSeeds.into());
+    }
+
+    Ok(bump)
+}
+
+pub fn check_client_treasury_seeds(
+    destination_contract: Pubkey,
+    address: Pubkey,
+) -> Result<u8, ProgramError> {
+    let (pda, bump) = Pubkey::find_program_address(
+        &[
+            MESSAGE_CLIENT_SEED,
+            destination_contract.as_ref(),
+            MESSAGE_CLIENT_TREASURY_SEED,
+        ],
+        &crate::id(),
+    );
+
+    if pda != address {
+        return Err(ProgramError::InvalidSeeds.into());
+    }
+
+    Ok(bump)
+}
+
+pub fn check_global_treasury_seeds(address: Pubkey) -> Result<u8, ProgramError> {
+    let (pda, bump) = Pubkey::find_program_address(&[MESSAGE_SEED, GLOBAL_TREASURY], &crate::id());
+
+    if pda != address {
+        return Err(ProgramError::InvalidSeeds.into());
+    }
+
+    Ok(bump)
+}
+
 pub fn assert_account_signer(account: &AccountInfo) -> Result<(), ProgramError> {
     if !account.is_signer {
         return Err(MessengerError::AccountNotSigner.into());
@@ -152,4 +199,49 @@ pub fn get_message_pda(program_id: &Pubkey) -> Pubkey {
         Pubkey::find_program_address(&[MESSAGE_SEED, program_id.as_ref()], &crate::id());
 
     message_key
+}
+
+pub fn public_key_to_address(pub_key: &[u8]) -> [u8; 20] {
+    let mut hasher = Keccak256::new();
+
+    if pub_key[0] == 4 {
+        hasher.update(&pub_key[1..]);
+    } else {
+        hasher.update(pub_key);
+    }
+
+    let result = hasher.finalize();
+
+    result[12..32].try_into().unwrap()
+}
+
+pub fn keccak256(bytes: &[u8]) -> [u8; 32] {
+    let mut output = [0u8; 32];
+    let mut hasher = Keccak::v256();
+    hasher.update(bytes);
+    hasher.finalize(&mut output);
+    output
+}
+
+pub fn pubkey_to_address(evm_pubkey: &[u8]) -> String {
+    evm_pubkey
+        .iter()
+        .map(|byte| format!("{:02X}", byte))
+        .collect()
+}
+
+pub fn create_ecdsa_sig(message: &Vec<u8>) -> [u8; 32] {
+    let mut eth_message = format!("{}{}", PREFIX, message.len()).into_bytes();
+    eth_message.extend_from_slice(&message);
+
+    let hashed = keccak256(&eth_message);
+
+    hashed
+}
+
+pub fn get_message_client_pda(destination_contract: Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[MESSAGE_CLIENT_SEED, destination_contract.as_ref()],
+        &crate::id(),
+    )
 }

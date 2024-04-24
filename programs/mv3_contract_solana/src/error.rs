@@ -37,6 +37,10 @@ pub enum MessengerError {
     InvalidInstruction,
     #[error("MessageV3: Missing validation account info!")]
     MissingValidationAccountInfo,
+    #[error("MessageV3: Invalid client program id!")]
+    InvalidClientProgramId,
+    #[error("MessageV3: Invalid client program update authority!")]
+    InvalidUpdateAuthority,
 }
 
 impl From<MessengerError> for ProgramError {

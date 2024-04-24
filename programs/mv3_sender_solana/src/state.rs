@@ -10,4 +10,17 @@ pub struct Message {
     pub received_at: i64,
     pub destination: ForeignAddress,
     pub payload: Vec<u8>,
+    pub tx_id: u128,
+    pub slot: u64,
+}
+
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct Config {
+    pub tx_id: u128,
+    pub last_relayed_at: i64,
+    pub bridge_enabled: bool,
+}
+
+impl Config {
+    pub const LEN: u64 = 16 + 8 + 1;
 }

@@ -11,17 +11,16 @@ spl-token = {version="4.0.0",features=["no-entrypoint"]}
 borsh="0.10"
 ethnum = "1.5.0"
 thiserror = "1.0"
-message_hook = {path = "../message_hook/interface"}
+message_hook = {path = "../../interface"}
 spl-tlv-account-resolution = "0.5.1"
 spl-type-length-value = "0.3.0"
 mv3_contract_solana={path="../mv3_contract_solana",features=["no-entrypoint"]}
-mv3_contract_sender={path="../mv3_contract_sender",features=["no-entrypoint"]}
+mv3_sender_solana={path="../mv3_sender_solana",features=["no-entrypoint"]}
 
 
 
 
 [dev-dependencies]
-solana-program-test="1.17.1"
 solana-sdk = "1.17.13"
 keccak-hash = "0.10.0"
 

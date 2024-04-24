@@ -69,3 +69,17 @@ pub struct Exsig {
 impl Exsig {
     pub const LEN: usize = 8 + 32 + 32;
 }
+
+#[derive(BorshDeserialize, BorshSerialize, Debug)]
+pub struct MessageClient {
+    pub authority: Pubkey,
+    pub destination_contract: Pubkey,
+    pub notify_on_failure: bool,
+    pub supported_chains: Vec<u64>,
+    pub allowed_contracts: Vec<ForeignAddress>,
+    pub exsig: Option<ForeignAddress>,
+}
+
+impl MessageClient {
+    pub const LEN: u64 = 32 + 32 + 1 + 4 + 4 + 1;
+}

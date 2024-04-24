@@ -1,5 +1,5 @@
 [package]
-name = "mv3_sender_solana"
+name = "message_hook"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,19 +7,16 @@ edition = "2021"
 
 [dependencies]
 solana-program="1.17.1"
-spl-token = {version="4.0.0",features=["no-entrypoint"]}
-borsh="0.10"
-ethnum = "1.5.0"
-thiserror = "1.0"
-message_hook = {path = "../../interface"}
+spl-discriminator = "0.1.0"
 spl-tlv-account-resolution = "0.5.1"
 spl-type-length-value = "0.3.0"
+spl-pod = "0.1.0"
+spl-program-error = "0.3.0"
 
 
 [lib]
-name="mv3_solana_sender"
-crate-type = ["cdylib", "lib"]
-
+name="message_hook"
+crate-type = ["cdylib","lib"]
 
 [features]
 no-entrypoint = []

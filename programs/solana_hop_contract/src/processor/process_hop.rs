@@ -12,7 +12,7 @@ use solana_program::{
 };
 use spl_tlv_account_resolution::state::ExtraAccountMetaList;
 
-use crate::instructions::HopData;
+use crate::instructions::{HopData, EVM_HOP_CONTRACT};
 
 pub fn process_hop(program_id: &Pubkey, accounts: &[AccountInfo], data: Vec<u8>) -> ProgramResult {
     let accounts_iter = &mut accounts.iter();
@@ -27,11 +27,7 @@ pub fn process_hop(program_id: &Pubkey, accounts: &[AccountInfo], data: Vec<u8>)
 
     let hop = U256::from_be_bytes(data[32..64].try_into().unwrap()).as_u64();
 
-    msg!("Hop: {:?}", hop);
-
     let remainin_len = data[128..].len().div(32);
-
-    msg!("Remaining len: {:?}", remainin_len);
 
     let mut chainlist: Vec<u64> = vec![];
 
@@ -89,8 +85,8 @@ pub fn process_hop(program_id: &Pubkey, accounts: &[AccountInfo], data: Vec<u8>)
         mv3_solana_sender::id(),
         payer.key,
         program_id,
-        1,
         *next_hop,
+        EVM_HOP_CONTRACT,
         payload,
     );
 

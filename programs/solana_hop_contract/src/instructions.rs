@@ -1,6 +1,8 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use message_hook::{get_extra_account_metas_address, instruction::MessageHookInstruction};
-use mv3_contract_solana::{constants::MESSAGE_SEED, utils::get_message_pda};
+use mv3_contract_solana::{
+    constants::MESSAGE_SEED, state::config::ForeignAddress, utils::get_message_pda,
+};
 use solana_program::{
     instruction::{AccountMeta, Instruction},
     pubkey::Pubkey,
@@ -93,3 +95,6 @@ pub fn update_extra_account_meta_list(
         accounts,
     }
 }
+
+//TODO:Set address of EVM hop contract, serialized with 12 zeros pre-padded
+pub const EVM_HOP_CONTRACT: ForeignAddress = [0; 32];
