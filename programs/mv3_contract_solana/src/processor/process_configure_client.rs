@@ -4,7 +4,7 @@ use borsh::BorshSerialize;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
-    program::invoke_signed,
+    program::{invoke, invoke_signed},
     pubkey::Pubkey,
     rent::Rent,
     system_instruction,
@@ -76,6 +76,20 @@ pub fn process_configure_client(
         .len()
         .checked_sub(message_client.data_len())
         .unwrap();
+
+    let additional_lamports = Rent::default().minimum_balance(data_diff);
+
+    let transfer_ix =
+        system_instruction::transfer(payer.key, message_client.key, additional_lamports);
+
+    invoke(
+        &transfer_ix,
+        &[
+            payer.to_owned(),
+            message_client.to_owned(),
+            system_program.to_owned(),
+        ],
+    )?;
 
     if data_diff > 0 {
         message_client.realloc(message_client.data_len().add(data_diff), false)?;
