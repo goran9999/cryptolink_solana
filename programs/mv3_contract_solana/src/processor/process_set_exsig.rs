@@ -43,5 +43,10 @@ pub fn process_set_exsig(
 
     message_client.realloc(serialized_data.len(), false)?;
 
+    message_client
+        .data
+        .borrow_mut()
+        .copy_from_slice(&serialized_data);
+
     Ok(())
 }
