@@ -4,6 +4,7 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     borsh0_10::try_from_slice_unchecked,
     entrypoint::ProgramResult,
+    msg,
     pubkey::Pubkey,
     rent::Rent,
     system_program::ID,
@@ -27,9 +28,19 @@ pub fn process_change_config(
 
     let raw_config = next_account_info(accounts)?;
 
+    msg!("Config len {}", raw_config.data_len());
+
     check_seeds(raw_config, &[CONFIG_SEED], program_id)?;
 
-    let mut config: MessengerConfig = try_from_slice_unchecked(&raw_config.data.borrow_mut())?;
+    let mut config: Box<MessengerConfig> = Box::new(try_from_slice_unchecked::<MessengerConfig>(
+        &raw_config.data.borrow_mut(),
+    )?);
+
+    msg!("Config {:?}", config);
+
+    if *authority.key != config.owner {
+        return ProgramResult::Err(solana_program::program_error::ProgramError::IllegalOwner);
+    }
 
     check_keys_eq(authority.key, &config.owner)?;
 
@@ -52,27 +63,26 @@ pub fn process_change_config(
     }
 
     if let Some(chains) = data.enabled_chains {
-        if chains.len() > config.enabled_chains.len() {
-            let new_len = (chains.len() - config.enabled_chains.len()) * 4;
-            let realloc_fee = Rent::default().minimum_balance(new_len);
-
-            transfer_sol(authority, raw_config, realloc_fee, system_program, None)?;
-
-            raw_config.realloc(raw_config.data_len().checked_add(new_len).unwrap(), false)?;
-        }
-
         config.enabled_chains = chains;
     }
 
-    if data.chainsig.is_some() && config.chainsig.is_none() {
-        let additional_rent = Rent::default().minimum_balance(32_usize);
-
-        transfer_sol(authority, raw_config, additional_rent, system_program, None)?;
-
-        raw_config.realloc(raw_config.data_len().checked_add(32).unwrap(), false)?;
-    }
-
     config.chainsig = data.chainsig;
+
+    match config
+        .try_to_vec()
+        .unwrap()
+        .len()
+        .checked_sub(raw_config.data_len())
+    {
+        Some(len_diff) => {
+            msg!("Len diff {}", len_diff);
+            let additional_rent = Rent::default().minimum_balance(len_diff);
+
+            transfer_sol(authority, raw_config, additional_rent, system_program, None)?;
+        }
+        None => {}
+    }
+    raw_config.realloc(config.try_to_vec().unwrap().len(), false)?;
 
     raw_config
         .data

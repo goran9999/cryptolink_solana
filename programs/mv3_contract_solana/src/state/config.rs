@@ -1,7 +1,7 @@
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use solana_program::pubkey::Pubkey;
 
-#[derive(BorshDeserialize, BorshSerialize, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, BorshSchema, Debug)]
 pub struct MessengerConfig {
     pub owner: Pubkey,
     pub next_tx_id: u128,
@@ -16,7 +16,6 @@ pub struct MessengerConfig {
     pub accountant: Pubkey,
     pub whitelist_only: bool,
     pub chainsig: Option<ForeignAddress>,
-    pub exsig: Vec<Exsig>,
 }
 
 impl MessengerConfig {
@@ -33,7 +32,6 @@ impl MessengerConfig {
             bridge_a_team: vec![],
             accountant: accountant.clone(),
             whitelist_only: false,
-            exsig: vec![],
             chainsig: None,
         }
     }
@@ -50,7 +48,7 @@ pub enum Role {
 
 pub type ForeignAddress = [u8; 32];
 
-#[derive(BorshDeserialize, BorshSerialize, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, BorshSchema, Debug)]
 pub struct UserPermission {
     pub wallet: Pubkey,
     pub is_active: bool,
@@ -76,6 +74,7 @@ pub struct MessageClient {
     pub destination_contract: Pubkey,
     pub notify_on_failure: bool,
     pub supported_chains: Vec<u64>,
+    //add chain id in allowed_contracts
     pub allowed_contracts: Vec<ForeignAddress>,
     pub exsig: Option<ForeignAddress>,
 }

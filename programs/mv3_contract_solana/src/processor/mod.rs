@@ -25,6 +25,7 @@ pub fn process_instruction(
     accounts: &[AccountInfo],
     data: &[u8],
 ) -> ProgramResult {
+    msg!("Deserializing ix! {}", data.len());
     let instruction = try_from_slice_unchecked::<V3Instruction>(data)?;
 
     match instruction {
