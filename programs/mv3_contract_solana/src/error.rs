@@ -41,6 +41,8 @@ pub enum MessengerError {
     InvalidClientProgramId,
     #[error("MessageV3: Invalid client program update authority!")]
     InvalidUpdateAuthority,
+    #[error("MessageV3: Message already processed!")]
+    MessageAlreadyProcessed,
 }
 
 impl From<MessengerError> for ProgramError {

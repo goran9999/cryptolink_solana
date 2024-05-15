@@ -60,7 +60,7 @@ pub enum V3Instruction {
     },
 }
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, Debug)]
 pub struct ReceiveMessage {
     pub tx_id: u128,
     pub dest_chain_id: u64,
@@ -267,7 +267,7 @@ pub fn receive_message(program_id: &Pubkey, data: ReceiveMessage, payer: Pubkey)
     let global_treasury = get_global_treasury_pda();
 
     let (message, _) =
-        Pubkey::find_program_address(&[MESSAGE_SEED, data.receiver.as_ref()], program_id);
+        Pubkey::find_program_address(&[MESSAGE_SEED, &data.tx_id.to_le_bytes()], program_id);
 
     accounts.push(AccountMeta {
         pubkey: message,
@@ -367,12 +367,12 @@ pub fn configure_client(payer: Pubkey, data: MessageClient) -> Instruction {
     ix
 }
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, Debug)]
 pub struct MessageDigest {
     pub data: Vec<u8>,
     pub tx_id: u128,
-    pub sender: ForeignAddress,
-    pub recipient: Pubkey,
+    pub sender: [u8; 32],
+    pub recipient: [u8; 32],
     pub dest_chain_id: u64,
     pub source_chain_id: u64,
 }
@@ -430,6 +430,38 @@ pub fn deposit_withdraw_sol(
     Instruction {
         program_id: crate::id(),
         accounts,
+        data,
+    }
+}
+
+pub fn set_exsig(authority: Pubkey, contract_address: Pubkey, data: SetExsig) -> Instruction {
+    let (pda, _) = get_message_client_pda(contract_address);
+
+    let accounts: Vec<AccountMeta> = vec![
+        AccountMeta {
+            is_signer: true,
+            is_writable: true,
+            pubkey: authority,
+        },
+        AccountMeta {
+            is_signer: false,
+            is_writable: true,
+            pubkey: pda,
+        },
+        AccountMeta {
+            is_signer: false,
+            is_writable: false,
+            pubkey: system_program::id(),
+        },
+    ];
+
+    let data = V3Instruction::SetExsig { exsig: data.exsig }
+        .try_to_vec()
+        .unwrap();
+
+    Instruction {
+        program_id: crate::id(),
+        accounts: accounts,
         data,
     }
 }

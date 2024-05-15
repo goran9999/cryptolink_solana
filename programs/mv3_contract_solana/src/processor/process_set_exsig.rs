@@ -1,3 +1,5 @@
+use std::ops::Sub;
+
 use borsh::BorshSerialize;
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
@@ -5,76 +7,41 @@ use solana_program::{
     entrypoint::ProgramResult,
     pubkey::Pubkey,
     rent::Rent,
-    sysvar::instructions::{
-        load_current_index_checked, load_instruction_at_checked, ID as SysvarInstruction,
-    },
 };
 
-use crate::{
-    constants::CONFIG_SEED,
-    error::MessengerError,
-    instruction::SetExsig,
-    state::config::{Exsig, MessengerConfig},
-    utils::{assert_account_signer, check_keys_eq, check_seeds, transfer_sol},
-};
+use crate::{instruction::SetExsig, state::config::MessageClient, utils::transfer_sol};
 
 pub fn process_set_exsig(
-    program_id: &Pubkey,
+    _program_id: &Pubkey,
     accounts: &[AccountInfo],
     data: SetExsig,
 ) -> ProgramResult {
     let accounts = &mut accounts.iter();
 
-    let payer = next_account_info(accounts)?;
-
-    assert_account_signer(payer)?;
-
-    let raw_config = next_account_info(accounts)?;
-
-    check_seeds(raw_config, &[CONFIG_SEED], program_id)?;
-
-    let mut config: MessengerConfig = try_from_slice_unchecked(&raw_config.data.borrow_mut())?;
-
-    let sysvar_instructions = next_account_info(accounts)?;
-
+    let authority = next_account_info(accounts)?;
+    let message_client = next_account_info(accounts)?;
     let system_program = next_account_info(accounts)?;
 
-    check_keys_eq(sysvar_instructions.key, &SysvarInstruction)?;
+    let mut decoded_client =
+        try_from_slice_unchecked::<MessageClient>(&message_client.data.borrow())?;
 
-    let ix_index = load_current_index_checked(sysvar_instructions)?;
+    decoded_client.exsig = Some(data.exsig);
 
-    //this ix needs to be called via CPI directly from recipient program so we verify nobody unauthorized sets exsig for recipient
-    let previous_ix = load_instruction_at_checked(usize::from(ix_index - 1), sysvar_instructions)?;
-
-    let exsig_exists = config
-        .exsig
-        .iter()
-        .any(|exisg| exisg.recipient == previous_ix.program_id);
-
-    if exsig_exists {
-        return Err(MessengerError::ExsigExists.into());
+    if decoded_client.authority != *authority.key {
+        return ProgramResult::Err(solana_program::program_error::ProgramError::IllegalOwner);
     }
 
-    let additional_len = Exsig::LEN;
+    let serialized_data = decoded_client.try_to_vec().unwrap();
 
-    let realloc_fee = Rent::default().minimum_balance(additional_len);
+    if serialized_data.len() > message_client.data_len() {
+        let data_diff = serialized_data.len().sub(message_client.data_len());
 
-    transfer_sol(payer, raw_config, realloc_fee, system_program, None)?;
+        let rent = Rent::default().minimum_balance(data_diff);
 
-    raw_config.realloc(
-        raw_config.data_len().checked_add(additional_len).unwrap(),
-        false,
-    )?;
+        transfer_sol(authority, message_client, rent, system_program, None)?;
+    }
 
-    config.exsig.push(Exsig {
-        recipient: previous_ix.program_id,
-        sig: data.exsig,
-    });
-
-    raw_config
-        .data
-        .borrow_mut()
-        .serialize(&mut config.try_to_vec().unwrap())?;
+    message_client.realloc(serialized_data.len(), false)?;
 
     Ok(())
 }

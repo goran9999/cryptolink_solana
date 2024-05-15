@@ -9,6 +9,7 @@ edition = "2021"
 solana-program="1.17.1"
 spl-token = {version="4.0.0",features=["no-entrypoint"]}
 borsh="0.10"
+hex = "0.4.3"
 ethnum = "1.5.0"
 thiserror = "1.0"
 sha3 = "0.10.8"

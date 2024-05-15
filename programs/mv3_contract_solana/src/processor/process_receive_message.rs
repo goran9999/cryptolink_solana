@@ -23,7 +23,7 @@ use solana_program::{
     borsh0_10::try_from_slice_unchecked,
     entrypoint::ProgramResult,
     msg,
-    program::{invoke, invoke_signed},
+    program::invoke_signed,
     pubkey::Pubkey,
     system_instruction,
 };
@@ -53,13 +53,11 @@ pub fn process_receive_message(
         return Err(MessengerError::InvalidClientProgramId.into());
     }
 
-    let config: MessengerConfig = try_from_slice_unchecked(&raw_config.data.borrow())?;
+    let mut config: MessengerConfig = try_from_slice_unchecked(&raw_config.data.borrow())?;
 
     let message_data = next_account_info(accounts_iter)?;
 
     let client_treasury = next_account_info(accounts_iter)?;
-
-    msg!("Dest contract {}", decoded_client.destination_contract);
 
     let treasury_bump =
         check_client_treasury_seeds(decoded_client.destination_contract, *client_treasury.key)?;
@@ -92,22 +90,27 @@ pub fn process_receive_message(
 
     let bump = check_seeds(
         message_data,
-        &[MESSAGE_SEED, receive_message.receiver.as_ref()],
+        &[MESSAGE_SEED, &receive_message.tx_id.to_le_bytes()],
         program_id,
     )?;
 
     let data_position = if config.chainsig.is_some() { 1 } else { 0 };
 
-    let message_payload = MessageDigest {
+    let mut encoded_recipient: Vec<u8> = [0; 12].to_vec();
+
+    encoded_recipient
+        .extend_from_slice(&hex::decode("0000000000000000000000000000000000000001").unwrap());
+
+    let base_message_payload = MessageDigest {
         data: receive_message.data.get(data_position).unwrap().clone(),
-        dest_chain_id: receive_message.dest_chain_id,
-        recipient: receive_message.receiver,
-        sender: receive_message.sender,
-        source_chain_id: receive_message.source_chain_id,
         tx_id: receive_message.tx_id,
-    }
-    .try_to_vec()
-    .unwrap();
+        sender: receive_message.sender,
+        recipient: encoded_recipient.try_into().unwrap(),
+        dest_chain_id: receive_message.dest_chain_id,
+        source_chain_id: receive_message.source_chain_id,
+    };
+
+    let message_payload = base_message_payload.try_to_vec().unwrap();
 
     // role_guard(&config, signer, Role::Operator)?;
 
@@ -125,14 +128,14 @@ pub fn process_receive_message(
 
     let mut data_index = 0;
 
-    let src_chain_exists = config
-        .enabled_chains
-        .into_iter()
-        .any(|c| u64::from(c) == receive_message.source_chain_id);
+    // let src_chain_exists = config
+    //     .enabled_chains
+    //     .into_iter()
+    //     .any(|c| u64::from(c) == receive_message.source_chain_id);
 
-    if !src_chain_exists {
-        return Err(MessengerError::ChainNotSupported.into());
-    }
+    // if !src_chain_exists {
+    //     return Err(MessengerError::ChainNotSupported.into());
+    // }
 
     if let Some(exsig) = decoded_client.exsig {
         let exsig_vrs_bytes = receive_message
@@ -165,14 +168,14 @@ pub fn process_receive_message(
             .get(data_index)
             .expect("Missing Chainsig vrs bytes!");
 
-        let recovery_id = u64::from_le_bytes(chainsig_vrs_bytes[..8].try_into().unwrap()) - 27;
+        let recovery_id: u8 = chainsig_vrs_bytes[64] - 27;
 
         let hashed = create_ecdsa_sig(&message_payload);
 
         let recovered_chainsig = solana_program::secp256k1_recover::secp256k1_recover(
             &hashed,
-            recovery_id as u8,
-            &chainsig_vrs_bytes[8..72],
+            recovery_id,
+            &chainsig_vrs_bytes[..64],
         )
         .expect("Failed to recover secp256k1 sig");
 
@@ -187,6 +190,10 @@ pub fn process_receive_message(
         }
     }
 
+    if !message_data.data_is_empty() {
+        return Err(MessengerError::MessageAlreadyProcessed.into());
+    }
+
     let message_payload = receive_message.data.get(data_index).unwrap();
 
     let decoded_message = MessagePayload::unpack(
@@ -195,19 +202,17 @@ pub fn process_receive_message(
         message_payload,
     );
 
-    if message_data.data_is_empty() {
-        initialize_account(
-            signer,
-            message_data,
-            system_program,
-            MessagePayload::LEN,
-            program_id,
-            &[MESSAGE_SEED, decoded_message.destination.as_ref(), &[bump]],
-        )?;
-    }
+    initialize_account(
+        signer,
+        message_data,
+        system_program,
+        MessagePayload::LEN,
+        program_id,
+        &[MESSAGE_SEED, &receive_message.tx_id.to_le_bytes(), &[bump]],
+    )?;
 
     let validate_key =
-        get_extra_account_metas_address(message_data.key, &decoded_message.destination);
+        get_extra_account_metas_address(message_client.key, &receive_message.receiver);
 
     let validation_key = accounts.iter().find(|acc| *acc.key == validate_key);
 
@@ -215,44 +220,24 @@ pub fn process_receive_message(
         return Err(MessengerError::MissingValidationAccountInfo.into());
     }
 
+    config.next_tx_id = config.next_tx_id.checked_add(1).unwrap();
+
+    raw_config
+        .data
+        .borrow_mut()
+        .copy_from_slice(&config.try_to_vec().unwrap());
+
     message_data
         .data
         .borrow_mut()
         .copy_from_slice(&decoded_message.try_to_vec().unwrap());
 
-    let destination = Pubkey::new_from_array(
-        Vec::from(&message_payload[..32])
-            .as_slice()
-            .try_into()
-            .unwrap(),
-    );
-
-    match invoke_execute(
-        &destination,
-        message_data,
+    invoke_execute(
+        &receive_message.receiver,
+        message_client,
         sysvar_instructions,
         accounts_iter.as_slice(),
-        Vec::from(&message_payload[32..]),
-    ) {
-        Ok(_) => {
-            msg!("Successfully bridged data!");
-        }
-        Err(e) => {
-            msg!("Invoking returned err {}", e.to_string());
-            if decoded_client.notify_on_failure {
-                let ix = mv3_solana_sender::instructions::send_message(
-                    mv3_solana_sender::id(),
-                    signer.key,
-                    &receive_message.receiver,
-                    receive_message.source_chain_id,
-                    receive_message.sender,
-                    receive_message.data.get(data_index).unwrap().clone(),
-                );
-
-                invoke(&ix, &[])?;
-            }
-        }
-    }
-
+        Vec::from(&message_payload[..]),
+    )?;
     Ok(())
 }
